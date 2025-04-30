@@ -1,23 +1,23 @@
 Módulo	Funcionalidad principal
 
-[] auth	Registro, login, logout, autenticación por roles
+[] auth	Registro, login, logout, autenticación por roles(feature/auth)
 
-[] dashboard	Página principal del usuario autenticado
+[] dashboard	Página principal del usuario autenticado(feature/dashboard)
 
-[] projects	Crear, editar, listar, eliminar proyectos
+[] projects	Crear, editar, listar, eliminar proyectos(feature/projects)
 
-[] tasks	Gestión de tareas asociadas a proyectos
+[] tasks	Gestión de tareas asociadas a proyectos(feature/tasks)
 
-[] kanban	Visualización interactiva de tareas por estado
+[] kanban	Visualización interactiva de tareas por estado(feature/kanban)
 
-[] chat	Chat en tiempo real entre miembros
+[] chat	Chat en tiempo real entre miembros(feature/chat)
 
-[] notifications	Notificaciones push o en tiempo real
+[] notifications	Notificaciones push o en tiempo real(feature/notifications)
 
-[] admin	Gestión de usuarios y panel administrativo
+[] admin	Gestión de usuarios y panel administrativo(feature/admin)
 
-[] ai	Interfaz con funciones IA (chatbot, predicciones)
+[] ai	Interfaz con funciones IA (chatbot, predicciones)(feature/ai)
 
-[] profile	Perfil de usuario: nombre, email, contraseña
+[] profile	Perfil de usuario: nombre, email, contraseña(feature/profile)
 
-[] analytics	Gráficas e indicadores de proyectos (opcional)
+[] analytics	Gráficas e indicadores de proyectos (opcional)(feature/analytics)
