@@ -1,0 +1,23 @@
+Módulo	Funcionalidad principal
+
+[] auth	Registro, login, logout, autenticación por roles
+
+[] dashboard	Página principal del usuario autenticado
+
+[] projects	Crear, editar, listar, eliminar proyectos
+
+[] tasks	Gestión de tareas asociadas a proyectos
+
+[] kanban	Visualización interactiva de tareas por estado
+
+[] chat	Chat en tiempo real entre miembros
+
+[] notifications	Notificaciones push o en tiempo real
+
+[] admin	Gestión de usuarios y panel administrativo
+
+[] ai	Interfaz con funciones IA (chatbot, predicciones)
+
+[] profile	Perfil de usuario: nombre, email, contraseña
+
+[] analytics	Gráficas e indicadores de proyectos (opcional)
