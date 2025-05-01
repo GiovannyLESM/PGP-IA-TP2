@@ -44,6 +44,12 @@ export const ProjectFormPage = () => {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
+      <button
+        onClick={() => navigate('/dashboard')}
+        className="text-blue-600 hover:underline mb-4 inline-block"
+      >
+        ← Volver
+      </button>
       <h1 className="text-3xl font-bold mb-6">➕ Crear nuevo proyecto</h1>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
