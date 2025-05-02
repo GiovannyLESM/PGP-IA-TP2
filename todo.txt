@@ -1,8 +1,8 @@
 Módulo	Funcionalidad principal
 
-[] auth	Registro, login, logout, autenticación por roles(feature/auth)
+[] auth	Registro, login, logout, autenticación por roles(feature/auth) //parcial FALTA
 
-[] dashboard	Página principal del usuario autenticado(feature/dashboard)
+[] dashboard	Página principal del usuario autenticado(feature/dashboard) 
 
 [] projects	Crear, editar, listar, eliminar proyectos(feature/projects)
 
