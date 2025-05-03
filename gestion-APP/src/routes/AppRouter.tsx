@@ -11,6 +11,8 @@ import { TaskListPage } from '../modules/tasks/TaskListPage';
 import { TaskFormPage } from '../modules/tasks/TaskFormPage';
 import { KanbanBoard } from '../modules/kanban/KanbanBoard';
 import { EditTaskPage } from '../modules/kanban/EditTaskPage';
+import { ChatPage } from '../modules/chat/ChatPage';
+import { ProjectChatPage } from '../modules/chat/ProjectChatPage';
 
 
 export const AppRouter = () => {
@@ -53,9 +55,11 @@ export const AppRouter = () => {
           element={isAuthenticated ? <KanbanBoard /> : <Navigate to="/login" />}
         />
         <Route path="/projects/:id/kanban/edit/:taskId" element={<EditTaskPage />} />
-
+        <Route path="/chat" element={<ChatPage />} />
+        
         {/* Ruta por defecto */}
         <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/projects/:id/chat" element={<ProjectChatPage />} />
       </Routes>
     </BrowserRouter>
   );
