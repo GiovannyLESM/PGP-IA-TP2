@@ -65,6 +65,12 @@ export const ProjectDetailPage = () => {
         >
         📌 Ver Kanban
       </button>
+      <button
+        onClick={() => navigate(`/projects/${proyecto.id}/chat`)}
+        className="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-600 ml-2"
+      >
+        💬 Ver Chat
+      </button>
     </div>
   );
 };
