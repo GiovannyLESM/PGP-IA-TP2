@@ -66,6 +66,12 @@ export const ProjectEditPage = () => {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
+      <button
+        onClick={() => navigate(`/projects/${id}`)}
+        className="text-blue-600 hover:underline mb-4 inline-block"
+      >
+        ← Volver al proyecto
+      </button>
       <h1 className="text-3xl font-bold mb-6">✏️ Editar Proyecto</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
