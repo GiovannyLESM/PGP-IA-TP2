@@ -13,6 +13,7 @@ import { KanbanBoard } from '../modules/kanban/KanbanBoard';
 import { EditTaskPage } from '../modules/kanban/EditTaskPage';
 import { ChatPage } from '../modules/chat/ChatPage';
 import { ProjectChatPage } from '../modules/chat/ProjectChatPage';
+import { ProfilePage } from '../modules/profile/ProfilePage';
 
 
 export const AppRouter = () => {
@@ -60,6 +61,7 @@ export const AppRouter = () => {
         {/* Ruta por defecto */}
         <Route path="*" element={<Navigate to="/login" />} />
         <Route path="/projects/:id/chat" element={<ProjectChatPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );
