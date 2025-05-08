@@ -36,3 +36,10 @@ const userSchema = new mongoose.Schema(
 );
 
 export const User = mongoose.model('User', userSchema);
+
+//http://localhost:5000/api/auth/register
+//{
+//     "nombre": "Blesscker",
+//     "correo": "blesscker@demo.com",
+//     "password": "123456"
+//   }
