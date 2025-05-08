@@ -14,12 +14,23 @@ Este proyecto usa **React + Vite + Tailwind CSS** con un entorno de desarrollo t
 
 ---
 
-### 🚀 Iniciar el entorno de desarrollo
+### 🚀 Iniciar el entorno de desarrollo front
 
 ```bash
 # Clona el proyecto
 git clone https://github.com/usuario/gestion-APP.git
 cd gestion-APP
+
+# Construye e inicia el contenedor
+docker-compose up --build
+```
+
+### 🚀 Iniciar el entorno de desarrollo back
+
+```bash
+# Clona el proyecto
+git clone https://github.com/usuario/gestion-APP.git
+cd backend
 
 # Construye e inicia el contenedor
 docker-compose up --build
