@@ -1,4 +1,3 @@
-// src/components/ProjectCard.tsx
 import { useNavigate } from 'react-router-dom';
 
 interface ProjectCardProps {
@@ -19,14 +18,14 @@ export const ProjectCard = ({ id, nombre, descripcion, estado, fecha }: ProjectC
   return (
     <div
       onClick={handleClick}
-      className="bg-white border border-gray-200 shadow-md rounded p-4 hover:shadow-lg transition cursor-pointer"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-black dark:text-white shadow-md rounded p-4 hover:shadow-lg transition cursor-pointer"
     >
       <h3 className="text-3xl font-bold mb-1">{nombre}</h3>
-      <p className="text-sm text-gray-600 mb-2">{descripcion}</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{descripcion}</p>
       <p className="text-sm">
         Estado: <span className="font-semibold">{estado}</span>
       </p>
-      <p className="text-xs text-gray-400">Fecha: {fecha}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500">Fecha: {fecha}</p>
     </div>
   );
 };
