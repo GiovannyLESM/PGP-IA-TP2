@@ -1,7 +1,7 @@
 // src/modules/dashboard/ProjectDetailPage.tsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-
+import { Layout } from '../../components/Layout';
 interface Proyecto {
   id: number;
   nombre: string;
@@ -29,6 +29,8 @@ export const ProjectDetailPage = () => {
   }
 
   return (
+    <Layout>
+
     <div className="p-8">
       <button
         onClick={() => navigate('/dashboard')}
@@ -72,5 +74,6 @@ export const ProjectDetailPage = () => {
         💬 Ver Chat
       </button>
     </div>
+    </Layout>
   );
 };
