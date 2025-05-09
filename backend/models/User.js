@@ -1,4 +1,3 @@
-// models/User.js
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
@@ -6,6 +5,10 @@ const userSchema = new mongoose.Schema(
     nombre: {
       type: String,
       required: true,
+      trim: true,
+    },
+    apellido: {
+      type: String,
       trim: true,
     },
     correo: {
@@ -21,25 +24,12 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
     avatar: {
-      type: String, // URL o base64
+      type: String, // base64 o URL
     },
-    proyectos: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Proyecto',
-      },
-    ],
   },
   {
-    timestamps: true, // createdAt, updatedAt
+    timestamps: true,
   }
 );
 
 export const User = mongoose.model('User', userSchema);
-
-//http://localhost:5000/api/auth/register
-//{
-//     "nombre": "Blesscker",
-//     "correo": "blesscker@demo.com",
-//     "password": "123456"
-//   }
