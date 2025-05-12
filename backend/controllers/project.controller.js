@@ -1,5 +1,5 @@
 import { Project } from '../models/Project.js';
-
+import {User} from '../models/User.js'
 export const crearProyecto = async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
@@ -135,5 +135,116 @@ export const eliminarProyecto = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: 'Error al eliminar el proyecto' });
+  }
+};
+
+export const agregarMiembro = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { correo, rol } = req.body;
+
+    const proyecto = await Project.findById(id);
+    if (!proyecto) {
+      return res.status(404).json({ msg: 'Proyecto no encontrado' });
+    }
+
+    const propietario = proyecto.miembros.find(
+      (m) =>
+        m.usuario.toString() === req.user._id.toString() &&
+        m.rol === 'propietario'
+    );
+    if (!propietario) {
+      return res.status(403).json({ msg: 'Solo el propietario puede agregar miembros' });
+    }
+
+    const usuarioInvitado = await User.findOne({ correo });
+    if (!usuarioInvitado) {
+      return res.status(404).json({ msg: 'Usuario no encontrado' });
+    }
+
+    const yaMiembro = proyecto.miembros.find(
+      (m) => m.usuario.toString() === usuarioInvitado._id.toString()
+    );
+    if (yaMiembro) {
+      return res.status(400).json({ msg: 'El usuario ya es miembro del proyecto' });
+    }
+
+    proyecto.miembros.push({
+      usuario: usuarioInvitado._id,
+      rol,
+    });
+
+    await proyecto.save();
+
+    res.status(200).json({ msg: 'Miembro agregado correctamente' });
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ msg: 'Error al agregar miembro' });
+  }
+};
+
+export const obtenerMiembros = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const proyecto = await Project.findById(id).populate('miembros.usuario', 'nombre correo');
+
+    if (!proyecto) {
+      return res.status(404).json({ msg: 'Proyecto no encontrado' });
+    }
+
+    const esMiembro = proyecto.miembros.some(
+      (m) => m.usuario._id.toString() === req.user._id.toString()
+    );
+
+    if (!esMiembro) {
+      return res.status(403).json({ msg: 'No tienes acceso a este proyecto' });
+    }
+
+    res.status(200).json(proyecto.miembros);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al obtener los miembros' });
+  }
+};
+
+export const eliminarMiembro = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+
+    const proyecto = await Project.findById(id);
+
+    if (!proyecto) {
+      return res.status(404).json({ msg: 'Proyecto no encontrado' });
+    }
+
+    // Verifica que el solicitante sea el propietario
+    const propietario = proyecto.miembros.find(
+      (m) =>
+        m.usuario.toString() === req.user._id.toString() &&
+        m.rol === 'propietario'
+    );
+
+    if (!propietario) {
+      return res.status(403).json({ msg: 'Solo el propietario puede eliminar miembros' });
+    }
+
+    // No permitir que se elimine a sí mismo
+    if (req.user._id.toString() === userId) {
+      return res.status(400).json({ msg: 'No puedes eliminarte a ti mismo del proyecto' });
+    }
+
+    // Elimina al miembro
+    const miembrosFiltrados = proyecto.miembros.filter(
+      (m) => m.usuario.toString() !== userId
+    );
+
+    proyecto.miembros = miembrosFiltrados;
+    await proyecto.save();
+
+    res.status(200).json({ msg: 'Miembro eliminado correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al eliminar miembro' });
   }
 };

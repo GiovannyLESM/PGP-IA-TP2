@@ -1,5 +1,12 @@
 import express from 'express';
-import { crearProyecto, obtenerProyectos,obtenerProyectoPorId,editarProyecto,eliminarProyecto } from '../controllers/project.controller.js';
+import { crearProyecto, 
+    obtenerProyectos,
+    obtenerProyectoPorId,
+    editarProyecto,
+    eliminarProyecto,
+    agregarMiembro,
+    obtenerMiembros,
+    eliminarMiembro } from '../controllers/project.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -9,4 +16,7 @@ router.get('/', protect, obtenerProyectos);
 router.get('/:id', protect, obtenerProyectoPorId);
 router.put('/:id', protect, editarProyecto);
 router.delete('/:id', protect, eliminarProyecto);
+router.post('/:id/members', protect, agregarMiembro);
+router.get('/:id/members', protect, obtenerMiembros);
+router.delete('/:id/members/:userId', protect, eliminarMiembro);
 export default router;
