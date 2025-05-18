@@ -183,3 +183,94 @@ export const eliminarChecklistItem = async (req, res) => {
     res.status(500).json({ msg: 'Error al eliminar el ítem del checklist' });
   }
 };
+
+export const agregarAdjunto = async(req, res) =>{
+  try{
+    const { id } = req.params;
+    const {nombre, url} = req.body;
+
+    if(!nombre || !url){
+      return res.status(400).json({msg:'Nombre y URL son obligatorios'})
+    }
+    const tarjeta = await Card.findById(id);
+    if(!tarjeta){
+      return res.status(400).json({msg:'Tarjeta no encontrada'})
+    }
+    tarjeta.adjuntos.push({nombre, url});
+
+    const actualizada = await tarjeta.save()
+    res.status(200).json({msg:'Adjunto agregado correctamente', tarjeta: actualizada})
+  } catch(error){
+    console.log(error);
+    res.status(500).json({msg:'Error al agregar adjunto'})
+  }
+}
+export const eliminarAdjunto = async (req, res) => {
+  try {
+    const { id, index } = req.params;
+
+    const tarjeta = await Card.findById(id);
+    if (!tarjeta) {
+      return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+    }
+
+    if (!tarjeta.adjuntos[index]) {
+      return res.status(400).json({ msg: 'Adjunto no encontrado' });
+    }
+
+    tarjeta.adjuntos.splice(index, 1);
+    const actualizada = await tarjeta.save();
+
+    res.status(200).json({ msg: 'Adjunto eliminado', tarjeta: actualizada });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al eliminar adjunto' });
+  }
+};
+
+export const agregarEtiqueta = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, color } = req.body;
+
+    if (!nombre || !color) {
+      return res.status(400).json({ msg: 'Nombre y color son obligatorios' });
+    }
+
+    const tarjeta = await Card.findById(id);
+    if (!tarjeta) {
+      return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+    }
+
+    tarjeta.etiquetas.push({ nombre, color });
+
+    const actualizada = await tarjeta.save();
+    res.status(200).json({ msg: 'Etiqueta agregada', tarjeta: actualizada });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al agregar etiqueta' });
+  }
+};
+
+export const eliminarEtiqueta = async (req, res) => {
+  try {
+    const { id, index } = req.params;
+
+    const tarjeta = await Card.findById(id);
+    if (!tarjeta) {
+      return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+    }
+
+    if (!tarjeta.etiquetas[index]) {
+      return res.status(400).json({ msg: 'Etiqueta no encontrada' });
+    }
+
+    tarjeta.etiquetas.splice(index, 1);
+    const actualizada = await tarjeta.save();
+
+    res.status(200).json({ msg: 'Etiqueta eliminada', tarjeta: actualizada });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al eliminar etiqueta' });
+  }
+};
