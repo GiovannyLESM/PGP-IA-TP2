@@ -12,7 +12,7 @@ router.post('/login', loginUser);
 router.get('/', (req, res) => {
     res.send('Auth route OK');
   });
-// Ruta protegida de prueba
+// Ruta prueba
 router.get('/protegido', protect, (req, res) => {
     res.json({ msg: `Hola ${req.user.nombre}, estás autenticado` });
   });
