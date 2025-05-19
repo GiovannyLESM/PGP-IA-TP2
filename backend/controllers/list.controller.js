@@ -36,3 +36,28 @@ export const crearLista = async (req, res) => {
     res.status(500).json({ msg: 'Error al crear la lista' });
   }
 };
+
+export const obtenerListasPorProyecto = async (req, res) => {
+  try {
+    const { id: proyectoId } = req.params;
+
+    const proyecto = await Project.findById(proyectoId);
+    if (!proyecto) {
+      return res.status(404).json({ msg: 'Proyecto no encontrado' });
+    }
+
+    const esMiembro = proyecto.miembros.some(
+      (m) => m.usuario.toString() === req.user._id.toString()
+    );
+    if (!esMiembro) {
+      return res.status(403).json({ msg: 'No tienes acceso a este proyecto' });
+    }
+
+    const listas = await List.find({ proyectoId }).sort({ posicion: 1 });
+
+    res.status(200).json(listas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al obtener listas' });
+  }
+};
