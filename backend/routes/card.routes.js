@@ -8,7 +8,9 @@ import {
     eliminarChecklistItem, 
     agregarAdjunto, 
     eliminarAdjunto, 
-    agregarEtiqueta, eliminarEtiqueta } from '../controllers/card.controller.js';
+    agregarEtiqueta, 
+    eliminarEtiqueta, 
+    reordenarTarjetas, obtenerTarjetasPorLista  } from '../controllers/card.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -23,6 +25,8 @@ router.patch('/cards/:id/adjuntos', protect, agregarAdjunto);
 router.delete('/cards/:id/adjuntos/:index', protect, eliminarAdjunto);
 router.patch('/cards/:id/etiquetas', protect, agregarEtiqueta);
 router.delete('/cards/:id/etiquetas/:index', protect, eliminarEtiqueta);
+router.patch('/listas/:id/tarjetas/reordenar', protect, reordenarTarjetas);
+router.get('/listas/:id/tarjetas', protect, obtenerTarjetasPorLista);
 
 export default router;
 

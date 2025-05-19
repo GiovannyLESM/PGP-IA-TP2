@@ -13,6 +13,10 @@ const cardSchema = new mongoose.Schema(
     },
     fechaInicio: Date,
     fechaFin: Date,
+    posicion: {
+      type: Number,
+      default: 0,
+    },
     listaId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'List',

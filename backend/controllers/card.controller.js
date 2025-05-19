@@ -274,3 +274,56 @@ export const eliminarEtiqueta = async (req, res) => {
     res.status(500).json({ msg: 'Error al eliminar etiqueta' });
   }
 };
+
+export const reordenarTarjetas = async (req, res) => {
+  try {
+    const { id: listaId } = req.params;
+    const { tarjetas } = req.body;
+
+    // tarjetas debe ser un array de objetos: [{ id: '...', posicion: 0 }, ...]
+    if (!Array.isArray(tarjetas)) {
+      return res.status(400).json({ msg: 'Debes enviar un arreglo de tarjetas con posición' });
+    }
+
+    for (const tarjeta of tarjetas) {
+      await Card.findOneAndUpdate(
+        { _id: tarjeta.id, listaId },
+        { posicion: tarjeta.posicion }
+      );
+    }
+
+    res.status(200).json({ msg: 'Tarjetas reordenadas correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al reordenar tarjetas' });
+  }
+};
+
+export const obtenerTarjetasPorLista = async (req, res) => {
+  try {
+    const { id: listaId } = req.params;
+
+    const lista = await List.findById(listaId);
+    if (!lista) {
+      return res.status(404).json({ msg: 'Lista no encontrada' });
+    }
+
+    const proyecto = await Project.findById(lista.proyectoId);
+    if (!proyecto) {
+      return res.status(404).json({ msg: 'Proyecto no encontrado' });
+    }
+
+    const esMiembro = proyecto.miembros.some(
+      (m) => m.usuario.toString() === req.user._id.toString()
+    );
+    if (!esMiembro) {
+      return res.status(403).json({ msg: 'No tienes permiso para ver las tarjetas' });
+    }
+
+    const tarjetas = await Card.find({ listaId }).sort({ posicion: 1 });
+    res.status(200).json(tarjetas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al obtener tarjetas' });
+  }
+};
