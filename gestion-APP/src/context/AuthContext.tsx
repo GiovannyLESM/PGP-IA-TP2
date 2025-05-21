@@ -1,9 +1,24 @@
 // src/context/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
+
+interface Usuario {
+  id: string;
+  nombre: string;
+  correo: string;
+  avatar?: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: () => void;
+  usuario: Usuario | null;
+  token: string | null;
+  login: (token: string) => void;
   logout: () => void;
   loading: boolean;
 }
@@ -11,30 +26,62 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true); // 🆕
+  const [token, setToken] = useState<string | null>(null);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedAuth = localStorage.getItem('auth') === 'true';
-    setIsAuthenticated(storedAuth);
-    setLoading(false); // ✔️ ya terminó de cargar
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchPerfil(storedToken);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const login = () => {
-    localStorage.setItem('auth', 'true');
-    setIsAuthenticated(true);
+  const fetchPerfil = async (jwt: string) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/users/me', {
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUsuario(data);
+        setToken(jwt);
+        localStorage.setItem('token', jwt);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Error al obtener perfil:', error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = (jwt: string) => {
+    fetchPerfil(jwt); // también guarda token
   };
 
   const logout = () => {
-    localStorage.removeItem('auth');
-    setIsAuthenticated(false);
+    setToken(null);
+    setUsuario(null);
+    localStorage.removeItem('token');
   };
 
-  return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    isAuthenticated: !!token,
+    usuario,
+    token,
+    login,
+    logout,
+    loading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
