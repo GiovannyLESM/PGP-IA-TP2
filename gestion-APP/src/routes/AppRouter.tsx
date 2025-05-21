@@ -1,8 +1,6 @@
-// src/routes/AppRouter.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from '../modules/auth/LoginPage';
 import { RegisterPage } from '../modules/auth/RegisterPage';
-import { Navbar } from '../components/Navbar';
 import { DashboardPage } from '../modules/dashboard/DashboardPage';
 import { ProjectDetailPage } from '../modules/projects/ProjectDetailPage';
 import { ProjectEditPage } from '../modules/projects/ProjectEditPage';
@@ -14,54 +12,33 @@ import { EditTaskPage } from '../modules/kanban/EditTaskPage';
 import { ChatPage } from '../modules/chat/ChatPage';
 import { ProjectChatPage } from '../modules/chat/ProjectChatPage';
 import { ProfilePage } from '../modules/profile/ProfilePage';
-
+import { PrivateRoute } from '../components/PrivateRoute';
+import { Navbar } from '../components/Navbar';
 
 export const AppRouter = () => {
-  const isAuthenticated = localStorage.getItem('auth') === 'true';
-
   return (
     <BrowserRouter>
-    <Navbar/>
+      <Navbar />
       <Routes>
+        {/* Públicas */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        
-        {/* Ruta protegida de ejemplo */}
-        <Route
-        path="/dashboard"
-        element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" />}
-        />
-        <Route
-        path="/projects/:id"
-        element={isAuthenticated ? <ProjectDetailPage /> : <Navigate to="/login" />}
-        />
-        <Route
-        path="/projects/:id/edit"
-        element={isAuthenticated ? <ProjectEditPage /> : <Navigate to="/login" />}
-        /> 
-        <Route
-        path="/projects/new"
-        element={isAuthenticated ? <ProjectFormPage /> : <Navigate to="/login" />}
-        /> 
-        <Route
-        path="/projects/:id/tasks"
-        element={isAuthenticated ? <TaskListPage /> : <Navigate to="/login" />}
-        />
-        <Route
-        path="/projects/:id/tasks/new"
-        element={isAuthenticated ? <TaskFormPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/projects/:id/kanban"
-          element={isAuthenticated ? <KanbanBoard /> : <Navigate to="/login" />}
-        />
-        <Route path="/projects/:id/kanban/edit/:taskId" element={<EditTaskPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        
+
+        {/* Privadas */}
+        <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
+        <Route path="/projects/:id/edit" element={<PrivateRoute><ProjectEditPage /></PrivateRoute>} />
+        <Route path="/projects/new" element={<PrivateRoute><ProjectFormPage /></PrivateRoute>} />
+        <Route path="/projects/:id/tasks" element={<PrivateRoute><TaskListPage /></PrivateRoute>} />
+        <Route path="/projects/:id/tasks/new" element={<PrivateRoute><TaskFormPage /></PrivateRoute>} />
+        <Route path="/projects/:id/kanban" element={<PrivateRoute><KanbanBoard /></PrivateRoute>} />
+        <Route path="/projects/:id/kanban/edit/:taskId" element={<PrivateRoute><EditTaskPage /></PrivateRoute>} />
+        <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
+        <Route path="/projects/:id/chat" element={<PrivateRoute><ProjectChatPage /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+
         {/* Ruta por defecto */}
         <Route path="*" element={<Navigate to="/login" />} />
-        <Route path="/projects/:id/chat" element={<ProjectChatPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );
