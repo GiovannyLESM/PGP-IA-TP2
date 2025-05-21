@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 interface ProjectCardProps {
-  id: number;
+  id: string;
   nombre: string;
   descripcion: string;
   estado: string;

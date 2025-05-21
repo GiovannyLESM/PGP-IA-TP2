@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { crearProyecto } from '../../api/projects';
+import { useAuth } from '../../context/AuthContext';
 
 export const ProjectFormPage = () => {
+  const { token } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -15,42 +18,29 @@ export const ProjectFormPage = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const { nombre, descripcion, estado, fecha } = form;
 
     if (!nombre || !descripcion || !estado || !fecha) {
       return setError('Todos los campos son obligatorios');
     }
 
-    // 🧪 Simular guardar el proyecto (puedes mejorar esto más adelante)
-    const nuevoProyecto = {
-      id: Date.now(), // ID único temporal
-      ...form,
-    };
-
-    // Simulamos guardar en localStorage (puedes conectarlo a un service.js más adelante)
-    const proyectosGuardados = JSON.parse(localStorage.getItem('proyectos') || '[]');
-    localStorage.setItem('proyectos', JSON.stringify([...proyectosGuardados, nuevoProyecto]));
-
-    console.log('Proyecto creado:', nuevoProyecto);
-
-    navigate('/dashboard');
+    try {
+      const nuevo = await crearProyecto(token!, form);
+      navigate(`/projects/${nuevo._id}`); // o navigate('/dashboard')
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error al crear el proyecto');
+    }
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <button
-        onClick={() => navigate('/dashboard')}
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        ← Volver
-      </button>
-      <h1 className="text-3xl font-bold mb-6">➕ Crear nuevo proyecto</h1>
+    <div className="p-8 max-w-2xl mx-auto text-black dark:text-white">
+      <h1 className="text-3xl font-bold mb-6">➕ Nuevo Proyecto</h1>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
@@ -58,7 +48,7 @@ export const ProjectFormPage = () => {
         <input
           type="text"
           name="nombre"
-          placeholder="Nombre del proyecto"
+          placeholder="Nombre"
           value={form.nombre}
           onChange={handleChange}
           className="w-full p-2 border rounded"
@@ -93,12 +83,22 @@ export const ProjectFormPage = () => {
           className="w-full p-2 border rounded"
         />
 
-        <button
-          type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Crear proyecto
-        </button>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="text-red-600 hover:underline"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Crear proyecto
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -1,9 +1,10 @@
-// src/modules/dashboard/ProjectDetailPage.tsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Layout } from '../../components/Layout';
+import { useAuth } from '../../context/AuthContext';
+import { obtenerProyectoPorId } from '../../api/projects';
+
 interface Proyecto {
-  id: number;
+  _id: string;
   nombre: string;
   descripcion: string;
   estado: string;
@@ -13,24 +14,32 @@ interface Proyecto {
 export const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [proyecto, setProyecto] = useState<Proyecto | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const storedProyectos = localStorage.getItem('proyectos');
-    if (storedProyectos) {
-      const proyectos = JSON.parse(storedProyectos);
-      const encontrado = proyectos.find((p: Proyecto) => p.id === Number(id));
-      setProyecto(encontrado ?? null);
-    }
-  }, [id]);
+    const cargarProyecto = async () => {
+      try {
+        const data = await obtenerProyectoPorId(token!, id!);
+        setProyecto(data);
+      } catch (err: any) {
+        setError(err.message || 'Error al cargar el proyecto');
+      }
+    };
+
+    if (token && id) cargarProyecto();
+  }, [token, id]);
+
+  if (error) {
+    return <p className="p-8 text-red-500">{error}</p>;
+  }
 
   if (!proyecto) {
-    return <p className="p-8 text-red-500">Proyecto no encontrado.</p>;
+    return <p className="p-8 text-gray-500">Cargando proyecto...</p>;
   }
 
   return (
-    <Layout>
-
     <div className="p-8">
       <button
         onClick={() => navigate('/dashboard')}
@@ -48,32 +57,30 @@ export const ProjectDetailPage = () => {
         <strong>Fecha:</strong> {proyecto.fecha}
       </p>
 
-      {/* Botón para editar */}
       <button
-        onClick={() => navigate(`/projects/${proyecto.id}/edit`)}
+        onClick={() => navigate(`/projects/${proyecto._id}/edit`)}
         className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
       >
         ✏️ Editar proyecto
       </button>
       <button
-        onClick={() => navigate(`/projects/${proyecto.id}/tasks`)}
+        onClick={() => navigate(`/projects/${proyecto._id}/tasks`)}
         className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 ml-2"
-        >
+      >
         📝 Ver tareas
-        </button>
-        <button
-        onClick={() => navigate(`/projects/${proyecto.id}/kanban`)}
+      </button>
+      <button
+        onClick={() => navigate(`/projects/${proyecto._id}/kanban`)}
         className="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-600 ml-2"
-        >
+      >
         📌 Ver Kanban
       </button>
       <button
-        onClick={() => navigate(`/projects/${proyecto.id}/chat`)}
-        className="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-600 ml-2"
+        onClick={() => navigate(`/projects/${proyecto._id}/chat`)}
+        className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2"
       >
         💬 Ver Chat
       </button>
     </div>
-    </Layout>
   );
 };
