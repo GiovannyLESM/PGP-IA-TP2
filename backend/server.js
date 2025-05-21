@@ -10,6 +10,7 @@ import projectRoutes from './routes/project.routes.js';
 import listRoutes from './routes/list.routes.js';
 import cardRoutes from './routes/card.routes.js';
 import messageRoutes from './routes/message.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 import { Message } from './models/Message.js';
 import { Project } from './models/Project.js';
@@ -27,7 +28,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api', listRoutes);
 app.use('/api', cardRoutes);
 app.use('/api/messages', messageRoutes);
-
+app.use('/api/users', userRoutes);
 // Conectar a MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
