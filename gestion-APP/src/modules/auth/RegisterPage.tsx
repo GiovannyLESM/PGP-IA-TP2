@@ -1,7 +1,7 @@
-// src/modules/auth/RegisterPage.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { registrarUsuario } from '../../api/auth';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -9,15 +9,15 @@ export const RegisterPage = () => {
 
   const [form, setForm] = useState({
     nombre: '',
-    email: '',
+    correo: '',
     password: '',
     confirmPassword: '',
     captcha: false,
   });
 
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  // ⛔️ Redireccionar si ya está logueado
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
@@ -32,12 +32,11 @@ export const RegisterPage = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const { nombre, correo, password, confirmPassword, captcha } = form;
 
-    const { nombre, email, password, confirmPassword, captcha } = form;
-
-    if (!nombre || !email || !password || !confirmPassword) {
+    if (!nombre || !correo || !password || !confirmPassword) {
       return setError('Todos los campos son obligatorios');
     }
 
@@ -53,18 +52,29 @@ export const RegisterPage = () => {
       return setError('Debes marcar el captcha');
     }
 
-    localStorage.setItem('user', JSON.stringify({ nombre, email, password }));
-    alert('Usuario registrado con éxito (simulado)');
-    navigate('/login');
+    try {
+      const data = await registrarUsuario({ nombre, correo, password });
+      setSuccess(data.msg);
+      setError('');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Error al registrar');
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 text-black dark:bg-gray-900 dark:text-white">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 dark:text-white p-8 rounded shadow-md w-full max-w-md">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white dark:bg-gray-800 dark:text-white p-8 rounded shadow-md w-full max-w-md"
+      >
         <h2 className="text-2xl font-bold mb-4">Registro</h2>
-  
+
         {error && <p className="text-red-500 mb-2">{error}</p>}
-  
+        {success && <p className="text-green-500 mb-2">{success}</p>}
+
         <input
           type="text"
           name="nombre"
@@ -73,16 +83,16 @@ export const RegisterPage = () => {
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
         />
-  
+
         <input
           type="email"
-          name="email"
+          name="correo"
           placeholder="Correo electrónico"
-          value={form.email}
+          value={form.correo}
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
         />
-  
+
         <input
           type="password"
           name="password"
@@ -91,7 +101,7 @@ export const RegisterPage = () => {
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
         />
-  
+
         <input
           type="password"
           name="confirmPassword"
@@ -100,7 +110,7 @@ export const RegisterPage = () => {
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
         />
-  
+
         <label className="flex items-center mb-4">
           <input
             type="checkbox"
@@ -111,7 +121,7 @@ export const RegisterPage = () => {
           />
           No soy un robot
         </label>
-  
+
         <button
           type="submit"
           className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600"
@@ -128,4 +138,4 @@ export const RegisterPage = () => {
       </form>
     </div>
   );
-};  
+};
