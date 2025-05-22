@@ -327,3 +327,40 @@ export const obtenerTarjetasPorLista = async (req, res) => {
     res.status(500).json({ msg: 'Error al obtener tarjetas' });
   }
 };
+
+export const moverCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nuevaListaId } = req.body;
+
+    const card = await Card.findById(id);
+    if (!card) return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+
+    card.listaId = nuevaListaId;
+    await card.save();
+
+    res.json({ msg: 'Tarjeta movida correctamente' });
+  } catch (error) {
+    res.status(500).json({ msg: 'Error al mover tarjeta' });
+  }
+};
+
+export const actualizarEstadoCompletada = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { completada } = req.body;
+
+    const card = await Card.findById(id);
+    if (!card) {
+      return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+    }
+
+    card.completada = completada;
+    await card.save();
+
+    res.json({ msg: 'Estado actualizado', card });
+  } catch (error) {
+    console.error('Error al actualizar estado:', error);
+    res.status(500).json({ msg: 'Error al actualizar estado' });
+  }
+};

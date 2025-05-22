@@ -46,6 +46,10 @@ const cardSchema = new mongoose.Schema(
         url: String,
       },
     ],
+    completada: {
+      type: Boolean,
+      default: false,
+    }
   },
   {
     timestamps: true,
