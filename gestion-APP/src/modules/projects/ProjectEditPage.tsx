@@ -1,10 +1,13 @@
-// src/modules/projects/ProjectEditPage.tsx
-import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { obtenerProyectoPorId, actualizarProyecto } from '../../api/projects';
 
 export const ProjectEditPage = () => {
   const { id } = useParams();
+  const { token } = useAuth();
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     nombre: '',
     descripcion: '',
@@ -15,64 +18,45 @@ export const ProjectEditPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const storedProyectos = localStorage.getItem('proyectos');
-    if (storedProyectos) {
-      const proyectos = JSON.parse(storedProyectos);
-      const proyecto = proyectos.find((p: any) => p.id === Number(id));
-
-      if (proyecto) {
+    const cargar = async () => {
+      try {
+        const proyecto = await obtenerProyectoPorId(token!, id!);
         setForm({
           nombre: proyecto.nombre,
           descripcion: proyecto.descripcion,
           estado: proyecto.estado,
           fecha: proyecto.fecha,
         });
-      } else {
-        setError('Proyecto no encontrado');
+      } catch (err: any) {
+        setError(err.message);
       }
-    }
-  }, [id]);
+    };
+
+    if (token && id) cargar();
+  }, [token, id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.nombre || !form.descripcion || !form.estado || !form.fecha) {
-      return setError('Todos los campos son obligatorios');
-    }
-
-    const storedProyectos = localStorage.getItem('proyectos');
-    if (storedProyectos) {
-      const proyectos = JSON.parse(storedProyectos);
-      const index = proyectos.findIndex((p: any) => p.id === Number(id));
-
-      if (index !== -1) {
-        proyectos[index] = { id: Number(id), ...form };
-        localStorage.setItem('proyectos', JSON.stringify(proyectos));
-        navigate(`/projects/${id}`);
-      } else {
-        setError('No se pudo actualizar el proyecto (no encontrado)');
-      }
-    } else {
-      setError('No hay proyectos registrados');
+    try {
+      await actualizarProyecto(token!, id!, form);
+      navigate(`/projects/${id}`);
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
-  if (error) return <p className="p-8 text-red-500">{error}</p>;
-
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <button
-        onClick={() => navigate(`/projects/${id}`)}
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        ← Volver al proyecto
-      </button>
+    <div className="p-8 max-w-2xl mx-auto text-black dark:text-white">
       <h1 className="text-3xl font-bold mb-6">✏️ Editar Proyecto</h1>
+
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
@@ -112,12 +96,22 @@ export const ProjectEditPage = () => {
           className="w-full p-2 border rounded"
         />
 
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Guardar cambios
-        </button>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(`/projects/${id}`)}
+            className="text-red-600 hover:underline"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Guardar cambios
+          </button>
+        </div>
       </form>
     </div>
   );
