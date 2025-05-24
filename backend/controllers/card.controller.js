@@ -364,3 +364,15 @@ export const actualizarEstadoCompletada = async (req, res) => {
     res.status(500).json({ msg: 'Error al actualizar estado' });
   }
 };
+
+export const obtenerChecklist = async (req, res) => {
+  try {
+    const card = await Card.findById(req.params.id);
+    if (!card) return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+
+    res.json(card.checklist || []);
+  } catch (error) {
+    console.error('Error al obtener checklist:', error);
+    res.status(500).json({ msg: 'Error del servidor' });
+  }
+};
