@@ -9,6 +9,17 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { obtenerListasPorProyecto, crearLista } from '../../api/lists';
 import { obtenerCardsPorLista, crearCardEnLista } from '../../api/cards';
+import {
+  agregarChecklistItem,
+  actualizarChecklistItem,
+  eliminarChecklistItem,
+  obtenerChecklist,
+} from '../../api/checklists';
+
+interface ChecklistItem {
+  nombre: string;
+  completado: boolean;
+}
 
 interface Lista {
   _id: string;
@@ -23,6 +34,7 @@ interface Tarea {
   listaId: string;
   completada?: boolean;
   fecha?: string;
+  checklist?: ChecklistItem[];
 }
 
 export const KanbanBoard = () => {
@@ -38,10 +50,94 @@ export const KanbanBoard = () => {
   const [nuevaTarea, setNuevaTarea] = useState<Record<string, { titulo: string; descripcion: string }>>({});
   const [mostrarFormulario, setMostrarFormulario] = useState<Record<string, boolean>>({});
   const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
+  const [nuevoChecklist, setNuevoChecklist] = useState('');
+  const [checklistEditando, setChecklistEditando] = useState<Record<number, string>>({});
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
 
-  const abrirDetalleTarea = (tarea: Tarea) => {
-    setTareaSeleccionada(tarea);
+  const obtenerProgresoChecklist = (checklist?: ChecklistItem[]) => {
+  if (!checklist || checklist.length === 0) return null;
+
+  const completados = checklist.filter((item) => item.completado).length;
+  const total = checklist.length;
+  return `${completados}/${total}`;
+};
+
+  const cargarChecklist = async (cardId: string) => {
+  try {
+    const data = await obtenerChecklist(token!, cardId);
+    setChecklist(data);
+  } catch (error) {
+    console.error('Error al cargar checklist:', error);
+  }
+};  
+const handleAgregarChecklist = async () => {
+  if (!nuevoChecklist.trim() || !tareaSeleccionada) return;
+
+  try {
+    await agregarChecklistItem(token!, tareaSeleccionada.id, {
+      nombre: nuevoChecklist,
+      completado: false,
+    });
+
+    setNuevoChecklist('');
+    await cargarChecklist(tareaSeleccionada.id); // 🔁 recarga el checklist visible
+  } catch (error) {
+    alert('Error al agregar ítem de checklist');
+  }
+};
+const toggleChecklistItem = async (index: number, completado: boolean) => {
+  if (!tareaSeleccionada) return;
+  try {
+    await actualizarChecklistItem(token!, tareaSeleccionada.id, index, completado);
+    await cargarChecklist(tareaSeleccionada.id); // recarga el checklist actualizado
+  } catch (error) {
+    alert('Error al actualizar ítem');
+  }
+};
+
+  const handleActualizarChecklist = async (
+    index: number,
+    actualizado: { nombre: string; completado: boolean }
+  ) => {
+    if (!tareaSeleccionada) return;
+    try {
+      const updated = await actualizarChecklistItem(token!, tareaSeleccionada.id, index, actualizado);
+      setTareaSeleccionada((prev) =>
+        prev
+          ? {
+              ...prev,
+              checklist: updated.checklist,
+            }
+          : null
+      );
+    } catch (err) {
+      alert('Error al actualizar ítem');
+    }
   };
+
+const handleEliminarChecklist = async (index: number) => {
+  if (!tareaSeleccionada) return;
+
+  try {
+    const actualizada = await eliminarChecklistItem(token!, tareaSeleccionada.id, index);
+    setTareaSeleccionada((prev) =>
+      prev
+        ? {
+            ...prev,
+            checklist: actualizada.checklist,
+          }
+        : null
+    );
+  } catch (err) {
+    alert('Error al eliminar ítem');
+  }
+};
+
+const abrirDetalleTarea = (tarea: Tarea) => {
+  setTareaSeleccionada(tarea);
+  cargarChecklist(tarea.id); // 🔁 carga automáticamente el checklist
+};
+
 
   const toggleCompletada = async (tareaId: string, completada: boolean) => {
     try {
@@ -121,6 +217,7 @@ export const KanbanBoard = () => {
             descripcion: c.descripcion,
             completada: c.completada,
             listaId: lista._id,
+            checklist: c.checklist || [],
           }));
           todasLasCards.push(...adaptadas);
         }
@@ -153,6 +250,16 @@ export const KanbanBoard = () => {
 
     await moverCard(tareaId, destination.droppableId);
   };
+
+  const eliminarItemChecklist = async (index: number) => {
+  if (!tareaSeleccionada) return;
+  try {
+    await eliminarChecklistItem(token!, tareaSeleccionada.id, index);
+    await cargarChecklist(tareaSeleccionada.id); // recarga el checklist actualizado
+  } catch (error) {
+    alert('Error al eliminar ítem');
+  }
+};
 
 
   const moverCard = async (cardId: string, nuevaListaId: string) => {
@@ -212,16 +319,21 @@ return (
                             <input
                               type="checkbox"
                               checked={tarea.completada || false}
-                              onChange={(e) =>
-                                toggleCompletada(tarea.id, e.target.checked)
-                              }
+                              onChange={(e) => toggleCompletada(tarea.id, e.target.checked)}
                             />
-                            <h3
-                              className="font-bold cursor-pointer hover:underline"
-                              onClick={() => abrirDetalleTarea(tarea)}
-                            >
-                              {tarea.titulo}
-                            </h3>
+                            <div>
+                              <h3
+                                className="font-bold cursor-pointer hover:underline"
+                                onClick={() => abrirDetalleTarea(tarea)}
+                              >
+                                {tarea.titulo}
+                              </h3>
+                              {tarea.checklist && tarea.checklist.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  ✅ {obtenerProgresoChecklist(tarea.checklist)}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -338,10 +450,13 @@ return (
     </div>
 
     {/* Modal de detalle de tarjeta */}
+
     {tareaSeleccionada && (
       <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
         <div className="bg-white p-6 rounded shadow max-w-md w-full">
           <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
+
+          {/* Título y descripción */}
           <p className="font-semibold mb-1">Título:</p>
           <p className="mb-2">{tareaSeleccionada.titulo}</p>
 
@@ -355,6 +470,56 @@ return (
             </>
           )}
 
+          {/* Checklist */}
+          {checklist.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-semibold mb-2">✅ Checklist:</h3>
+              <ul className="space-y-2">
+                {checklist.map((item, index) => (
+                  <li key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={item.completado}
+                        onChange={(e) => toggleChecklistItem(index, e.target.checked)}
+                      />
+                      <span className={`${item.completado ? 'line-through text-green-600' : ''}`}>
+                        {item.nombre}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => eliminarItemChecklist(index)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      ❌
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Añadir nuevo ítem al checklist */}
+          <div className="mt-4">
+            <h4 className="font-semibold mb-1">➕ Añadir ítem</h4>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nombre del ítem"
+                value={nuevoChecklist}
+                onChange={(e) => setNuevoChecklist(e.target.value)}
+                className="flex-1 p-1 border rounded text-sm"
+              />
+              <button
+                onClick={handleAgregarChecklist}
+                className="bg-green-600 text-white px-2 rounded hover:bg-green-700 text-sm"
+              >
+                Añadir
+              </button>
+            </div>
+          </div>
+
+          {/* Cerrar */}
           <div className="flex justify-end mt-6">
             <button
               onClick={() => setTareaSeleccionada(null)}

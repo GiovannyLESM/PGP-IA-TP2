@@ -12,7 +12,7 @@ import {
     eliminarEtiqueta, 
     reordenarTarjetas, 
     obtenerTarjetasPorLista, 
-    moverCard, actualizarEstadoCompletada  } from '../controllers/card.controller.js';
+    moverCard, actualizarEstadoCompletada,obtenerChecklist  } from '../controllers/card.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -31,6 +31,7 @@ router.patch('/listas/:id/tarjetas/reordenar', protect, reordenarTarjetas);
 router.get('/listas/:id/tarjetas', protect, obtenerTarjetasPorLista);
 router.patch('/tarjetas/:id/mover', protect, moverCard);
 router.patch('/tarjetas/:id/completada', protect, actualizarEstadoCompletada);
+router.get('/cards/:id/checklist', protect, obtenerChecklist);
 
 export default router;
 
