@@ -15,7 +15,11 @@ import {
   eliminarChecklistItem,
   obtenerChecklist,
 } from '../../api/checklists';
-
+import {
+  obtenerEtiquetas,
+  agregarEtiqueta,
+  eliminarEtiqueta,
+} from '../../api/etiquetas';
 interface ChecklistItem {
   nombre: string;
   completado: boolean;
@@ -26,7 +30,10 @@ interface Lista {
   nombre: string;
   posicion: number;
 }
-
+interface Etiqueta {
+  nombre: string;
+  color: string;
+}
 interface Tarea {
   id: string;
   titulo: string;
@@ -35,6 +42,8 @@ interface Tarea {
   completada?: boolean;
   fecha?: string;
   checklist?: ChecklistItem[];
+  etiquetas?: Etiqueta[];
+  
 }
 
 export const KanbanBoard = () => {
@@ -47,12 +56,13 @@ export const KanbanBoard = () => {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [error, setError] = useState('');
   const [nuevaLista, setNuevaLista] = useState('');
-  const [nuevaTarea, setNuevaTarea] = useState<Record<string, { titulo: string; descripcion: string }>>({});
+  const [nuevaTarea, setNuevaTarea] = useState<Record<string, { titulo: string; descripcion: string; fechaInicio?: string; fechaFin?: string }>>({});
   const [mostrarFormulario, setMostrarFormulario] = useState<Record<string, boolean>>({});
   const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
   const [nuevoChecklist, setNuevoChecklist] = useState('');
-  const [checklistEditando, setChecklistEditando] = useState<Record<number, string>>({});
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [etiquetas, setEtiquetas] = useState<{ nombre: string; color: string }[]>([]);
+  const [nuevaEtiqueta, setNuevaEtiqueta] = useState({ nombre: '', color: '#000000' });
 
   const obtenerProgresoChecklist = (checklist?: ChecklistItem[]) => {
   if (!checklist || checklist.length === 0) return null;
@@ -62,7 +72,39 @@ export const KanbanBoard = () => {
   return `${completados}/${total}`;
 };
 
-  const cargarChecklist = async (cardId: string) => {
+const cargarEtiquetas = async (cardId: string) => {
+  try {
+    const data = await obtenerEtiquetas(token!, cardId);
+    setEtiquetas(data);
+  } catch (err) {
+    console.error('Error al obtener etiquetas', err);
+  }
+};
+
+const handleAgregarEtiqueta = async () => {
+  if (!nuevaEtiqueta.nombre.trim() || !tareaSeleccionada) return;
+  try {
+    await agregarEtiqueta(token!, tareaSeleccionada.id, nuevaEtiqueta);
+    setNuevaEtiqueta({ nombre: '', color: '#000000' });
+    await cargarEtiquetas(tareaSeleccionada.id);
+    await recargarTareas();
+  } catch (err) {
+    alert('Error al agregar etiqueta');
+  }
+};
+
+const handleEliminarEtiqueta = async (index: number) => {
+  if (!tareaSeleccionada) return;
+  try {
+    await eliminarEtiqueta(token!, tareaSeleccionada.id, index);
+    await cargarEtiquetas(tareaSeleccionada.id);
+    await recargarTareas();
+  } catch (err) {
+    alert('Error al eliminar etiqueta');
+  }
+};
+
+const cargarChecklist = async (cardId: string) => {
   try {
     const data = await obtenerChecklist(token!, cardId);
     setChecklist(data);
@@ -87,55 +129,97 @@ const handleAgregarChecklist = async () => {
 };
 const toggleChecklistItem = async (index: number, completado: boolean) => {
   if (!tareaSeleccionada) return;
+
   try {
     await actualizarChecklistItem(token!, tareaSeleccionada.id, index, completado);
-    await cargarChecklist(tareaSeleccionada.id); // recarga el checklist actualizado
+
+    const nuevoChecklist = await obtenerChecklist(token!, tareaSeleccionada.id);
+    setChecklist(nuevoChecklist);
+
+    // 🔁 actualiza también en la lista general de tareas
+    setTareas((prev) =>
+      prev.map((t) =>
+        t.id === tareaSeleccionada.id
+          ? { ...t, checklist: nuevoChecklist }
+          : t
+      )
+    );
+
+    //Si todos los ítems están completados, marcar tarjeta como completada
+  const todosCompletados = nuevoChecklist.every((item) => item.completado);
+
+    if (todosCompletados) {
+      await fetch(`http://localhost:5000/api/tarjetas/${tareaSeleccionada.id}/completada`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ completada: true }),
+      });
+
+      setTareas((prev) =>
+        prev.map((t) =>
+          t.id === tareaSeleccionada.id
+            ? { ...t, completada: true }
+            : t
+        )
+      );
+    } else {
+      // Si desmarcan al menos uno, desmarcar la tarjeta como incompleta
+      await fetch(`http://localhost:5000/api/tarjetas/${tareaSeleccionada.id}/completada`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ completada: false }),
+      });
+
+      setTareas((prev) =>
+        prev.map((t) =>
+          t.id === tareaSeleccionada.id
+            ? { ...t, completada: false }
+            : t
+        )
+      );
+    }
+
   } catch (error) {
     alert('Error al actualizar ítem');
   }
 };
 
-  const handleActualizarChecklist = async (
-    index: number,
-    actualizado: { nombre: string; completado: boolean }
-  ) => {
-    if (!tareaSeleccionada) return;
-    try {
-      const updated = await actualizarChecklistItem(token!, tareaSeleccionada.id, index, actualizado);
-      setTareaSeleccionada((prev) =>
-        prev
-          ? {
-              ...prev,
-              checklist: updated.checklist,
-            }
-          : null
-      );
-    } catch (err) {
-      alert('Error al actualizar ítem');
-    }
-  };
-
-const handleEliminarChecklist = async (index: number) => {
-  if (!tareaSeleccionada) return;
+const recargarTareas = async () => {
+  if (!token || listas.length === 0) return;
 
   try {
-    const actualizada = await eliminarChecklistItem(token!, tareaSeleccionada.id, index);
-    setTareaSeleccionada((prev) =>
-      prev
-        ? {
-            ...prev,
-            checklist: actualizada.checklist,
-          }
-        : null
-    );
+    const todasLasCards: Tarea[] = [];
+
+    for (const lista of listas) {
+      const cards = await obtenerCardsPorLista(token, lista._id);
+      const adaptadas = cards.map((c: any) => ({
+        id: c._id,
+        titulo: c.titulo,
+        descripcion: c.descripcion,
+        completada: c.completada,
+        listaId: lista._id,
+        checklist: c.checklist || [],
+        etiquetas: c.etiquetas || [],
+      }));
+      todasLasCards.push(...adaptadas);
+    }
+
+    setTareas(todasLasCards);
   } catch (err) {
-    alert('Error al eliminar ítem');
+    setError('Error al recargar tareas');
   }
 };
 
-const abrirDetalleTarea = (tarea: Tarea) => {
+const abrirDetalleTarea = async (tarea: Tarea) => {
   setTareaSeleccionada(tarea);
-  cargarChecklist(tarea.id); // 🔁 carga automáticamente el checklist
+  cargarChecklist(tarea.id);
+  cargarEtiquetas(tarea.id);
 };
 
 
@@ -177,6 +261,8 @@ const abrirDetalleTarea = (tarea: Tarea) => {
           descripcion: c.descripcion,
           completada: c.completada,
           listaId: lista._id,
+          checklist: c.checklist || [],
+          etiquetas: c.etiquetas || [],
         }));
         todasLasCards.push(...adaptadas);
       }
@@ -218,6 +304,7 @@ const abrirDetalleTarea = (tarea: Tarea) => {
             completada: c.completada,
             listaId: lista._id,
             checklist: c.checklist || [],
+            etiquetas: c.etiquetas || [],
           }));
           todasLasCards.push(...adaptadas);
         }
@@ -315,7 +402,21 @@ return (
                             tarea.completada ? 'bg-green-50 line-through text-green-700' : ''
                           }`}
                         >
+                          {tarea.etiquetas && tarea.etiquetas.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {tarea.etiquetas.map((etiqueta, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-0.5 text-xs rounded font-medium text-white"
+                                  style={{ backgroundColor: etiqueta.color }}
+                                >
+                                  {etiqueta.nombre}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex items-center gap-2">
+                            
                             <input
                               type="checkbox"
                               checked={tarea.completada || false}
@@ -453,71 +554,125 @@ return (
 
     {tareaSeleccionada && (
       <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
-        <div className="bg-white p-6 rounded shadow max-w-md w-full">
-          <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
+    <div className="bg-white p-6 rounded shadow max-w-md w-full">
+      <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
 
-          {/* Título y descripción */}
-          <p className="font-semibold mb-1">Título:</p>
-          <p className="mb-2">{tareaSeleccionada.titulo}</p>
+      {/* Título y descripción */}
+      <p className="font-semibold mb-1">Título:</p>
+      <p className="mb-2">{tareaSeleccionada.titulo}</p>
 
-          <p className="font-semibold mb-1">Descripción:</p>
-          <p className="mb-2">{tareaSeleccionada.descripcion}</p>
+      <p className="font-semibold mb-1">Descripción:</p>
+      <p className="mb-2">{tareaSeleccionada.descripcion}</p>
 
-          {tareaSeleccionada.fecha && (
-            <>
-              <p className="font-semibold mb-1">Fecha:</p>
-              <p className="mb-2">{tareaSeleccionada.fecha}</p>
-            </>
-          )}
+      {tareaSeleccionada.fecha && (
+        <>
+          <p className="font-semibold mb-1">Fecha:</p>
+          <p className="mb-2">{tareaSeleccionada.fecha}</p>
+        </>
+      )}
 
-          {/* Checklist */}
-          {checklist.length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-semibold mb-2">✅ Checklist:</h3>
-              <ul className="space-y-2">
-                {checklist.map((item, index) => (
-                  <li key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={item.completado}
-                        onChange={(e) => toggleChecklistItem(index, e.target.checked)}
-                      />
-                      <span className={`${item.completado ? 'line-through text-green-600' : ''}`}>
-                        {item.nombre}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => eliminarItemChecklist(index)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      ❌
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Añadir nuevo ítem al checklist */}
-          <div className="mt-4">
-            <h4 className="font-semibold mb-1">➕ Añadir ítem</h4>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Nombre del ítem"
-                value={nuevoChecklist}
-                onChange={(e) => setNuevoChecklist(e.target.value)}
-                className="flex-1 p-1 border rounded text-sm"
-              />
-              <button
-                onClick={handleAgregarChecklist}
-                className="bg-green-600 text-white px-2 rounded hover:bg-green-700 text-sm"
+      {/* Etiquetas */}
+      {etiquetas.length > 0 && (
+      <div className="mb-4">
+        <p className="font-semibold mb-1">Etiquetas:</p>
+        <div className="flex flex-wrap gap-2">
+          {etiquetas.map((etiqueta, idx) => (
+            <div key={idx} className="flex items-center gap-1">
+              <span
+                className="px-2 py-1 text-xs rounded font-medium text-white"
+                style={{ backgroundColor: etiqueta.color }}
               >
-                Añadir
+                {etiqueta.nombre}
+              </span>
+              <button
+                onClick={() => handleEliminarEtiqueta(idx)}
+                className="text-xs text-red-500 hover:text-red-700"
+              >
+                ❌
               </button>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
+    )}
+    <div className="mt-4">
+      <h4 className="font-semibold mb-1">🎨 Nueva etiqueta</h4>
+      <div className="flex gap-2 items-center">
+        <input
+          type="text"
+          placeholder="Nombre"
+          value={nuevaEtiqueta.nombre}
+          onChange={(e) =>
+            setNuevaEtiqueta((prev) => ({ ...prev, nombre: e.target.value }))
+          }
+          className="flex-1 p-1 border rounded text-sm"
+        />
+        <input
+          type="color"
+          value={nuevaEtiqueta.color}
+          onChange={(e) =>
+            setNuevaEtiqueta((prev) => ({ ...prev, color: e.target.value }))
+          }
+          className="w-10 h-10 border p-0"
+        />
+        <button
+          onClick={handleAgregarEtiqueta}
+          className="bg-indigo-600 text-white px-3 rounded hover:bg-indigo-700 text-sm"
+        >
+          Añadir
+        </button>
+      </div>
+    </div>
+
+
+      {/* Checklist */}
+      {checklist.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-semibold mb-2">✅ Checklist:</h3>
+          <ul className="space-y-2">
+            {checklist.map((item, index) => (
+              <li key={index} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={item.completado}
+                    onChange={(e) => toggleChecklistItem(index, e.target.checked)}
+                  />
+                  <span className={`${item.completado ? 'line-through text-green-600' : ''}`}>
+                    {item.nombre}
+                  </span>
+                </div>
+                <button
+                  onClick={() => eliminarItemChecklist(index)}
+                  className="text-red-500 hover:text-red-700 text-sm"
+                >
+                  ❌
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Añadir nuevo ítem al checklist */}
+      <div className="mt-4">
+        <h4 className="font-semibold mb-1">➕ Añadir ítem</h4>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Nombre del ítem"
+            value={nuevoChecklist}
+            onChange={(e) => setNuevoChecklist(e.target.value)}
+            className="flex-1 p-1 border rounded text-sm"
+          />
+          <button
+            onClick={handleAgregarChecklist}
+            className="bg-green-600 text-white px-2 rounded hover:bg-green-700 text-sm"
+          >
+            Añadir
+          </button>
+        </div>
+      </div>
 
           {/* Cerrar */}
           <div className="flex justify-end mt-6">
