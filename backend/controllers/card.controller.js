@@ -376,3 +376,42 @@ export const obtenerChecklist = async (req, res) => {
     res.status(500).json({ msg: 'Error del servidor' });
   }
 };
+
+export const obtenerEtiquetasCard = async (req, res) => {
+  try {
+    const card = await Card.findById(req.params.id);
+    if (!card) {
+      return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+    }
+
+    res.json(card.etiquetas || []);
+  } catch (error) {
+    console.error('Error al obtener etiquetas:', error);
+    res.status(500).json({ msg: 'Error al obtener etiquetas' });
+  }
+};
+
+export const actualizarTarjeta = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const campos = req.body; // puede venir uno o más campos
+
+    const tarjeta = await Card.findById(id);
+    if (!tarjeta) return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+
+    // Solo actualiza los campos permitidos
+    const camposPermitidos = ['titulo', 'descripcion', 'fechaInicio', 'fechaFin'];
+    camposPermitidos.forEach((campo) => {
+      if (campos[campo] !== undefined) {
+        tarjeta[campo] = campos[campo];
+      }
+    });
+
+    await tarjeta.save();
+
+    res.json({ msg: 'Tarjeta actualizada correctamente', tarjeta });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Error al actualizar la tarjeta' });
+  }
+};
