@@ -21,7 +21,7 @@ export const actualizarChecklistItem = async (
   token: string,
   cardId: string,
   index: number,
-  completado: boolean
+  actualizado: { nombre: string; completado: boolean }
 ) => {
   const res = await fetch(`http://localhost:5000/api/cards/${cardId}/checklist/${index}`, {
     method: 'PATCH',
@@ -29,13 +29,15 @@ export const actualizarChecklistItem = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ completado }),
+    body: JSON.stringify(actualizado),
   });
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.msg || 'Error al actualizar ítem');
   return data;
 };
+
+
 
 
 export const eliminarChecklistItem = async (

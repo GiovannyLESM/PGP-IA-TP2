@@ -66,6 +66,8 @@ export const KanbanBoard = () => {
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [etiquetas, setEtiquetas] = useState<{ nombre: string; color: string }[]>([]);
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState({ nombre: '', color: '#000000' });
+  const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
+  const [nuevoNombreChecklist, setNuevoNombreChecklist] = useState('');
 
   const obtenerProgresoChecklist = (checklist?: ChecklistItem[]) => {
   if (!checklist || checklist.length === 0) return null;
@@ -74,6 +76,8 @@ export const KanbanBoard = () => {
   const total = checklist.length;
   return `${completados}/${total}`;
 };
+
+
 
 const cargarEtiquetas = async (cardId: string) => {
   try {
@@ -125,16 +129,30 @@ const handleAgregarChecklist = async () => {
     });
 
     setNuevoChecklist('');
-    await cargarChecklist(tareaSeleccionada.id); // 🔁 recarga el checklist visible
+    const checklistActualizado = await obtenerChecklist(token!, tareaSeleccionada.id);
+    setChecklist(checklistActualizado);
+
+    // 🔁 actualizar también en el estado de las tareas
+    setTareas((prev) =>
+      prev.map((t) =>
+        t.id === tareaSeleccionada.id
+          ? { ...t, checklist: checklistActualizado }
+          : t
+      )
+    );
   } catch (error) {
     alert('Error al agregar ítem de checklist');
   }
 };
+
+
 const toggleChecklistItem = async (index: number, completado: boolean) => {
   if (!tareaSeleccionada) return;
-
   try {
-    await actualizarChecklistItem(token!, tareaSeleccionada.id, index, completado);
+    await actualizarChecklistItem(token!, tareaSeleccionada.id, index, {
+    nombre: checklist[index].nombre,
+    completado,
+  });
 
     const nuevoChecklist = await obtenerChecklist(token!, tareaSeleccionada.id);
     setChecklist(nuevoChecklist);
@@ -373,7 +391,29 @@ const abrirDetalleTarea = async (tarea: Tarea) => {
     console.error('Error al mover la tarjeta:', error);
   }
 };
+const guardarNombreChecklist = async (index: number) => {
+  if (!tareaSeleccionada || !nuevoNombreChecklist.trim()) return;
 
+  try {
+    await actualizarChecklistItem(token!, tareaSeleccionada.id, index, {
+      nombre: nuevoNombreChecklist,
+      completado: checklist[index].completado,
+    });
+
+    const actualizado = await obtenerChecklist(token!, tareaSeleccionada.id);
+    setChecklist(actualizado);
+    setTareas((prev) =>
+      prev.map((t) =>
+        t.id === tareaSeleccionada.id ? { ...t, checklist: actualizado } : t
+      )
+    );
+
+    setEditandoIndex(null);
+    setNuevoNombreChecklist('');
+  } catch (err) {
+    alert('Error al actualizar nombre del ítem');
+  }
+};
 return (
   <Layout>
     <div className="p-8 text-black dark:text-white">
@@ -663,9 +703,30 @@ return (
                         checked={item.completado}
                         onChange={(e) => toggleChecklistItem(index, e.target.checked)}
                       />
-                      <span className={`${item.completado ? 'line-through text-green-600' : ''}`}>
-                        {item.nombre}
-                      </span>
+
+                      {editandoIndex === index ? (
+                        <input
+                          type="text"
+                          value={nuevoNombreChecklist}
+                          onChange={(e) => setNuevoNombreChecklist(e.target.value)}
+                          onBlur={() => guardarNombreChecklist(index)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') guardarNombreChecklist(index);
+                          }}
+                          autoFocus
+                          className="border p-0.5 text-sm rounded"
+                        />
+                      ) : (
+                        <span
+                          className={`${item.completado ? 'line-through text-green-600' : ''} cursor-pointer`}
+                          onDoubleClick={() => {
+                            setEditandoIndex(index);
+                            setNuevoNombreChecklist(item.nombre);
+                          }}
+                        >
+                          {item.nombre}
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={() => eliminarItemChecklist(index)}
@@ -675,6 +736,7 @@ return (
                     </button>
                   </li>
                 ))}
+
               </ul>
             </div>
           )}
