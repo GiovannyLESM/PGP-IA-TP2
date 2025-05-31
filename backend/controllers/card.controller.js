@@ -299,13 +299,20 @@ export const reordenarTarjetas = async (req, res) => {
   }
 };
 
+import mongoose from 'mongoose';
+
 export const obtenerTarjetasPorLista = async (req, res) => {
   try {
     const { id: listaId } = req.params;
 
+    // Validación rápida para ObjectId
+    if (!mongoose.Types.ObjectId.isValid(listaId)) {
+      return res.status(400).json({ msg: 'ID de lista inválido' });
+    }
+
     const lista = await List.findById(listaId);
     if (!lista) {
-      return res.status(404).json({ msg: 'Lista no encontrada' });
+      return res.status(200).json([]); // Lista no encontrada aún, puede estar en proceso de creación
     }
 
     const proyecto = await Project.findById(lista.proyectoId);
@@ -327,6 +334,7 @@ export const obtenerTarjetasPorLista = async (req, res) => {
     res.status(500).json({ msg: 'Error al obtener tarjetas' });
   }
 };
+
 
 export const moverCard = async (req, res) => {
   try {

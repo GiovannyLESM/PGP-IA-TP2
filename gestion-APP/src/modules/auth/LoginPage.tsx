@@ -25,7 +25,7 @@ export const LoginPage = () => {
 
     try {
       const { token } = await loginUsuario({ correo, password });
-      login(token); // 🔥 Guarda token y obtiene perfil
+      login(token); //Guarda token y obtiene perfil
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
     }
