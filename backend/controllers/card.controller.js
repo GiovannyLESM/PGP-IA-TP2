@@ -140,26 +140,25 @@ export const agregarChecklistItem = async (req, res) => {
 export const actualizarChecklistItem = async (req, res) => {
   try {
     const { cardId, index } = req.params;
-    const { completado } = req.body;
+    const { nombre, completado } = req.body;
 
-    const tarjeta = await Card.findById(cardId);
-    if (!tarjeta) {
-      return res.status(404).json({ msg: 'Tarjeta no encontrada' });
-    }
+    const card = await Card.findById(cardId);
+    if (!card) return res.status(404).json({ msg: 'Tarjeta no encontrada' });
 
-    if (!tarjeta.checklist[index]) {
-      return res.status(400).json({ msg: 'Ítem de checklist no existe' });
-    }
+    if (!card.checklist[index])
+      return res.status(404).json({ msg: 'Ítem no encontrado' });
 
-    tarjeta.checklist[index].completado = Boolean(completado);
-    const actualizada = await tarjeta.save();
+    // Actualizar ítem
+    card.checklist[index] = { nombre, completado };
 
-    res.status(200).json({ msg: 'Checklist actualizado', tarjeta: actualizada });
+    await card.save();
+    res.json(card.checklist);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ msg: 'Error al actualizar el checklist' });
+    res.status(500).json({ msg: 'Error al actualizar ítem del checklist' });
   }
 };
+
 
 export const eliminarChecklistItem = async (req, res) => {
   try {
