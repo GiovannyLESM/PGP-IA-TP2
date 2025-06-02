@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectCard } from '../../components/ProjectCard';
 import { Layout } from '../../components/Layout';
 import { obtenerProyectos } from '../../api/projects';
 import { useAuth } from '../../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 
 interface Proyecto {
   _id: string;
@@ -16,22 +16,40 @@ interface Proyecto {
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { usuario, token } = useAuth();
-  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const cargar = async () => {
-      try {
-        const data = await obtenerProyectos(token!);
-        setProyectos(data);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || 'Error al cargar proyectos');
-      }
-    };
+  // Hook useQuery para obtener proyectos
+  const {
+      data: proyectos = [],
+      isLoading,
+      isError,
+      error,
+    } = useQuery<Proyecto[], Error>({
+      queryKey: ['proyectos', token],
+      queryFn: () => obtenerProyectos(token!),
+      enabled: !!token,
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    });
 
-    if (token) cargar();
-  }, [token]);
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen p-8 bg-white text-black dark:bg-gray-900 dark:text-white transition-colors duration-300">
+          <p>Cargando proyectos...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Layout>
+        <div className="min-h-screen p-8 bg-white text-black dark:bg-gray-900 dark:text-white transition-colors duration-300">
+          <p className="text-red-500">Error: {error.message}</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -66,8 +84,6 @@ export const DashboardPage = () => {
 
         {/* Lista dinámica de proyectos */}
         <h2 className="text-2xl font-semibold mb-4">📁 Proyectos recientes</h2>
-
-        {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {proyectos.map((proyecto) => (

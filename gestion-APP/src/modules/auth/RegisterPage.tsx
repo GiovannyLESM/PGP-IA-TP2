@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { registrarUsuario } from '../../api/auth';
+import { useMutation } from '@tanstack/react-query';
+
+type RegisterData = {
+  nombre: string;
+  correo: string;
+  password: string;
+};
+
+type RegisterResponse = {
+  msg: string;
+};
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -15,8 +26,7 @@ export const RegisterPage = () => {
     captcha: false,
   });
 
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -24,44 +34,53 @@ export const RegisterPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  const mutation = useMutation<RegisterResponse, Error, RegisterData>({
+    mutationFn: registrarUsuario,
+    onSuccess: (data) => {
+      setLocalError(null);
+      // Mostrar mensaje de éxito y navegar luego de un tiempo
+      alert(data.msg);
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    },
+    onError: (error) => {
+      setLocalError(error.message);
+    },
+  });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm({
       ...form,
       [name]: type === 'checkbox' ? checked : value,
     });
+    setLocalError(null); // limpiar error al cambiar inputs
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const { nombre, correo, password, confirmPassword, captcha } = form;
 
+    // Validaciones locales
     if (!nombre || !correo || !password || !confirmPassword) {
-      return setError('Todos los campos son obligatorios');
+      return setLocalError('Todos los campos son obligatorios');
     }
 
     if (password.length < 6) {
-      return setError('La contraseña debe tener al menos 6 caracteres');
+      return setLocalError('La contraseña debe tener al menos 6 caracteres');
     }
 
     if (password !== confirmPassword) {
-      return setError('Las contraseñas no coinciden');
+      return setLocalError('Las contraseñas no coinciden');
     }
 
     if (!captcha) {
-      return setError('Debes marcar el captcha');
+      return setLocalError('Debes marcar el captcha');
     }
 
-    try {
-      const data = await registrarUsuario({ nombre, correo, password });
-      setSuccess(data.msg);
-      setError('');
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Error al registrar');
-    }
+    // Ejecutar mutación
+    mutation.mutate({ nombre, correo, password });
   };
 
   return (
@@ -72,8 +91,15 @@ export const RegisterPage = () => {
       >
         <h2 className="text-2xl font-bold mb-4">Registro</h2>
 
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-        {success && <p className="text-green-500 mb-2">{success}</p>}
+        {(localError || mutation.isError) && (
+          <p className="text-red-500 mb-2">
+            {localError || mutation.error?.message}
+          </p>
+        )}
+
+        {mutation.isSuccess && (
+          <p className="text-green-500 mb-2">{mutation.data?.msg}</p>
+        )}
 
         <input
           type="text"
@@ -82,6 +108,7 @@ export const RegisterPage = () => {
           value={form.nombre}
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+          required
         />
 
         <input
@@ -91,6 +118,7 @@ export const RegisterPage = () => {
           value={form.correo}
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+          required
         />
 
         <input
@@ -100,6 +128,7 @@ export const RegisterPage = () => {
           value={form.password}
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+          required
         />
 
         <input
@@ -109,6 +138,7 @@ export const RegisterPage = () => {
           value={form.confirmPassword}
           onChange={handleChange}
           className="w-full p-2 border rounded mb-3 bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-300"
+          required
         />
 
         <label className="flex items-center mb-4">
@@ -125,9 +155,11 @@ export const RegisterPage = () => {
         <button
           type="submit"
           className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600"
+          disabled={mutation.isPending}
         >
-          Registrarse
+          {mutation.isPending ? 'Registrando...' : 'Registrarse'}
         </button>
+
         <button
           type="button"
           onClick={() => navigate('/login')}
