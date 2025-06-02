@@ -11,12 +11,15 @@ export const obtenerProyectos = async (token: string) => {
   return data;
 };
 
-export const crearProyecto = async (token: string, proyecto: {
-  nombre: string;
-  descripcion: string;
-  estado: string;
-  fecha: string;
-}) => {
+export const crearProyecto = async (
+  token: string,
+  proyecto: {
+    nombre: string;
+    descripcion: string;
+    estado: string;
+    fecha: string;
+  }
+) => {
   const res = await fetch('http://localhost:5000/api/projects', {
     method: 'POST',
     headers: {
@@ -27,9 +30,13 @@ export const crearProyecto = async (token: string, proyecto: {
   });
 
   const data = await res.json();
+
   if (!res.ok) throw new Error(data.msg || 'Error al crear proyecto');
-  return data; // el proyecto creado
+
+  // Devuelve el proyecto directamente si está anidado
+  return data.proyecto || data;
 };
+
 
 export const obtenerProyectoPorId = async (token: string, id: string) => {
   const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
