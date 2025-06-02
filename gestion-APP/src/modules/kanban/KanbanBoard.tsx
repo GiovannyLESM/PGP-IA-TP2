@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import {
   DragDropContext,
   Droppable,
@@ -39,14 +40,12 @@ interface Tarea {
   id: string;
   titulo: string;
   descripcion: string;
-  listaId: string;
   completada?: boolean;
-  fecha?: string;
+  listaId: string;
   fechaInicio?: string;
   fechaFin?: string;
   checklist?: ChecklistItem[];
   etiquetas?: Etiqueta[];
-  
 }
 
 export const KanbanBoard = () => {
@@ -55,8 +54,6 @@ export const KanbanBoard = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  const [listas, setListas] = useState<Lista[]>([]);
-  const [tareas, setTareas] = useState<Tarea[]>([]);
   const [error, setError] = useState('');
   const [nuevaLista, setNuevaLista] = useState('');
   const [nuevaTarea, setNuevaTarea] = useState<Record<string, { titulo: string; descripcion: string }>>({});
@@ -94,18 +91,21 @@ const handleAgregarEtiqueta = async () => {
     await agregarEtiqueta(token!, tareaSeleccionada.id, nuevaEtiqueta);
     setNuevaEtiqueta({ nombre: '', color: '#000000' });
     await cargarEtiquetas(tareaSeleccionada.id);
-    await recargarTareas();
+    // await recargarTareas();
+    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
   } catch (err) {
     alert('Error al agregar etiqueta');
   }
 };
+
 
 const handleEliminarEtiqueta = async (index: number) => {
   if (!tareaSeleccionada) return;
   try {
     await eliminarEtiqueta(token!, tareaSeleccionada.id, index);
     await cargarEtiquetas(tareaSeleccionada.id);
-    await recargarTareas();
+
+    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
   } catch (err) {
     alert('Error al eliminar etiqueta');
   }
@@ -119,6 +119,8 @@ const cargarChecklist = async (cardId: string) => {
     console.error('Error al cargar checklist:', error);
   }
 };  
+const queryClient = useQueryClient();
+
 const handleAgregarChecklist = async () => {
   if (!nuevoChecklist.trim() || !tareaSeleccionada) return;
 
@@ -132,14 +134,8 @@ const handleAgregarChecklist = async () => {
     const checklistActualizado = await obtenerChecklist(token!, tareaSeleccionada.id);
     setChecklist(checklistActualizado);
 
-    // 🔁 actualizar también en el estado de las tareas
-    setTareas((prev) =>
-      prev.map((t) =>
-        t.id === tareaSeleccionada.id
-          ? { ...t, checklist: checklistActualizado }
-          : t
-      )
-    );
+    // 🔁 Invalida la query de las cards de la lista correspondiente
+    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
   } catch (error) {
     alert('Error al agregar ítem de checklist');
   }
@@ -150,92 +146,33 @@ const toggleChecklistItem = async (index: number, completado: boolean) => {
   if (!tareaSeleccionada) return;
   try {
     await actualizarChecklistItem(token!, tareaSeleccionada.id, index, {
-    nombre: checklist[index].nombre,
-    completado,
-  });
+      nombre: checklist[index].nombre,
+      completado,
+    });
 
     const nuevoChecklist = await obtenerChecklist(token!, tareaSeleccionada.id);
     setChecklist(nuevoChecklist);
 
-    // 🔁 actualiza también en la lista general de tareas
-    setTareas((prev) =>
-      prev.map((t) =>
-        t.id === tareaSeleccionada.id
-          ? { ...t, checklist: nuevoChecklist }
-          : t
-      )
-    );
+    // Invalida la query de las cards de la lista correspondiente
+    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
 
-    //Si todos los ítems están completados, marcar tarjeta como completada
-  const todosCompletados = nuevoChecklist.every((item) => item.completado);
+    // Si todos los ítems están completados, marcar tarjeta como completada
+    const todosCompletados = nuevoChecklist.every((item: ChecklistItem) => item.completado);
 
-    if (todosCompletados) {
-      await fetch(`http://localhost:5000/api/tarjetas/${tareaSeleccionada.id}/completada`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ completada: true }),
-      });
+    await fetch(`http://localhost:5000/api/tarjetas/${tareaSeleccionada.id}/completada`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ completada: todosCompletados }),
+    });
 
-      setTareas((prev) =>
-        prev.map((t) =>
-          t.id === tareaSeleccionada.id
-            ? { ...t, completada: true }
-            : t
-        )
-      );
-    } else {
-      // Si desmarcan al menos uno, desmarcar la tarjeta como incompleta
-      await fetch(`http://localhost:5000/api/tarjetas/${tareaSeleccionada.id}/completada`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ completada: false }),
-      });
-
-      setTareas((prev) =>
-        prev.map((t) =>
-          t.id === tareaSeleccionada.id
-            ? { ...t, completada: false }
-            : t
-        )
-      );
-    }
+    // Invalida la query de las cards de la lista nuevamente para reflejar el cambio de completada
+    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
 
   } catch (error) {
     alert('Error al actualizar ítem');
-  }
-};
-
-const recargarTareas = async () => {
-  if (!token || listas.length === 0) return;
-
-  try {
-    const todasLasCards: Tarea[] = [];
-
-    for (const lista of listas) {
-      const cards = await obtenerCardsPorLista(token, lista._id);
-      const adaptadas = cards.map((c: any) => ({
-        id: c._id,
-        titulo: c.titulo,
-        descripcion: c.descripcion,
-        completada: c.completada,
-        listaId: lista._id,
-        fechaInicio: c.fechaInicio,
-        fechaFin: c.fechaFin,
-        checklist: c.checklist || [],
-        etiquetas: c.etiquetas || [],
-      }));
-      todasLasCards.push(...adaptadas);
-    }
-
-    setTareas(todasLasCards);
-  } catch (err) {
-    setError('Error al recargar tareas');
   }
 };
 
@@ -245,126 +182,95 @@ const abrirDetalleTarea = async (tarea: Tarea) => {
   cargarEtiquetas(tarea.id);
   
 };
+const toggleCompletada = async (tareaId: string, completada: boolean) => {
+  try {
+    await fetch(`http://localhost:5000/api/tarjetas/${tareaId}/completada`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ completada }),
+    });
+
+    // Busca la tarea para obtener el listaId
+    const tarea = tareas.find((t) => t.id === tareaId);
+    if (!tarea) return;
+
+    // Invalida la query de las cards de la lista correspondiente
+    queryClient.invalidateQueries({ queryKey: ['cards', tarea.listaId] });
+  } catch (err) {
+    alert('Error al actualizar estado');
+  }
+};
+
+const handleCrearCard = async (e: React.FormEvent, listaId: string) => {
+  e.preventDefault();
+  const data = nuevaTarea[listaId];
+  if (!data?.titulo || !data?.descripcion) return;
+
+  try {
+    await crearCardEnLista(token!, listaId, data);
+
+    queryClient.invalidateQueries({ queryKey: ['cards', listaId] });
+
+    setNuevaTarea((prev) => ({ ...prev, [listaId]: { titulo: '', descripcion: '' } }));
+    setMostrarFormulario((prev) => ({ ...prev, [listaId]: false }));
+  } catch (err: any) {
+    alert(err.message || 'Error al crear tarea');
+  }
+};
 
 
-  const toggleCompletada = async (tareaId: string, completada: boolean) => {
-    try {
-      await fetch(`http://localhost:5000/api/tarjetas/${tareaId}/completada`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ completada }),
-      });
+// Query para cargar listas
+const { data: listas = [], isLoading: isLoadingListas, error: errorListas } = useQuery({
+  queryKey: ['listas', id],
+  queryFn: () => obtenerListasPorProyecto(token!, id!),
+  enabled: !!token && !!id,
+});
 
-      setTareas((prev) =>
-        prev.map((t) =>
-          t.id === tareaId ? { ...t, completada } : t
-        )
-      );
-    } catch (err) {
-      alert('Error al actualizar estado');
-    }
-  };
+const tareasQueries = useQueries({
+  queries: listas.map((lista: Lista) => ({
+    queryKey: ['cards', lista._id],
+    queryFn: () => obtenerCardsPorLista(token!, lista._id),
+    enabled: !!token && !!lista._id,
+  })),
+});
 
-  const handleCrearCard = async (e: React.FormEvent, listaId: string) => {
-    e.preventDefault();
-    const data = nuevaTarea[listaId];
-    if (!data?.titulo || !data?.descripcion) return;
+const tareas: Tarea[] = tareasQueries.flatMap((q, idx) =>
+  (q.data as any[] || []).map((c: any) => ({
+    id: c._id,
+    titulo: c.titulo,
+    descripcion: c.descripcion,
+    completada: c.completada,
+    listaId: listas[idx]?._id || '',
+    fechaInicio: c.fechaInicio,
+    fechaFin: c.fechaFin,
+    checklist: c.checklist || [],
+    etiquetas: c.etiquetas || [],
+  }))
+);
 
-    try {
-      await crearCardEnLista(token!, listaId, data);
 
-      const todasLasCards: Tarea[] = [];
-      for (const lista of listas) {
-        const cards = await obtenerCardsPorLista(token!, lista._id);
-        const adaptadas = cards.map((c: any) => ({
-          id: c._id,
-          titulo: c.titulo,
-          descripcion: c.descripcion,
-          completada: c.completada,
-          listaId: lista._id,
-          fechaInicio: c.fechaInicio,
-          fechaFin: c.fechaFin,
-          checklist: c.checklist || [],
-          etiquetas: c.etiquetas || [],
-        }));
-        todasLasCards.push(...adaptadas);
-      }
+const handleDragEnd = async (result: DropResult) => {
+  const { destination, source, draggableId } = result;
 
-      setTareas(todasLasCards);
-      setNuevaTarea((prev) => ({ ...prev, [listaId]: { titulo: '', descripcion: '' } }));
-      setMostrarFormulario((prev) => ({ ...prev, [listaId]: false }));
-    } catch (err: any) {
-      alert(err.message || 'Error al crear tarea');
-    }
-  };
+  if (!destination) return;
+  if (
+    destination.droppableId === source.droppableId &&
+    destination.index === source.index
+  ) return;
 
-  useEffect(() => {
-    const cargarListas = async () => {
-      try {
-        const data = await obtenerListasPorProyecto(token!, id!);
-        setListas(data);
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar listas');
-      }
-    };
+  const tareaId = draggableId;
 
-    if (token && id) cargarListas();
-  }, [token, id]);
+  // Mueve la card en el backend
+  await moverCard(tareaId, destination.droppableId);
 
-  useEffect(() => {
-    const cargarCardsPorListas = async () => {
-      if (!token || listas.length === 0) return;
+  // Invalida las queries de las cards de ambas listas (origen y destino)
+  queryClient.invalidateQueries({ queryKey: ['cards', source.droppableId] });
+  queryClient.invalidateQueries({ queryKey: ['cards', destination.droppableId] });
+};
 
-      try {
-        const todasLasCards: Tarea[] = [];
-
-        for (const lista of listas) {
-          const cards = await obtenerCardsPorLista(token, lista._id);
-          const adaptadas = cards.map((c: any) => ({
-            id: c._id,
-            titulo: c.titulo,
-            descripcion: c.descripcion,
-            completada: c.completada,
-            listaId: lista._id,
-            fechaInicio: c.fechaInicio,
-            fechaFin: c.fechaFin,
-            checklist: c.checklist || [],
-            etiquetas: c.etiquetas || [],
-          }));
-          todasLasCards.push(...adaptadas);
-        }
-
-        setTareas(todasLasCards);
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar tarjetas');
-      }
-    };
-
-    cargarCardsPorListas();
-  }, [token, listas]);
-
-  const handleDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-
-    if (!destination) return;
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) return;
-
-    const tareaId = draggableId;
-
-    setTareas((prev) =>
-      prev.map((t) =>
-        t.id === tareaId ? { ...t, listaId: destination.droppableId } : t
-      )
-    );
-
-    await moverCard(tareaId, destination.droppableId);
-  };
 
   const eliminarItemChecklist = async (index: number) => {
   if (!tareaSeleccionada) return;
@@ -402,11 +308,9 @@ const guardarNombreChecklist = async (index: number) => {
 
     const actualizado = await obtenerChecklist(token!, tareaSeleccionada.id);
     setChecklist(actualizado);
-    setTareas((prev) =>
-      prev.map((t) =>
-        t.id === tareaSeleccionada.id ? { ...t, checklist: actualizado } : t
-      )
-    );
+
+    // Invalida la query para que React Query recargue las tareas de la lista correspondiente
+    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
 
     setEditandoIndex(null);
     setNuevoNombreChecklist('');
@@ -414,6 +318,7 @@ const guardarNombreChecklist = async (index: number) => {
     alert('Error al actualizar nombre del ítem');
   }
 };
+
 return (
   <Layout>
     <div className="p-8 text-black dark:text-white">
@@ -430,7 +335,7 @@ return (
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {listas.map((lista) => (
+          {listas.map((lista:Lista) => (
             <Droppable droppableId={lista._id} key={lista._id}>
               {(provided) => (
                 <div
@@ -578,24 +483,12 @@ return (
               const response = await crearLista(token!, id!, nuevaLista);
               const nueva = response.lista;
               console.log('Lista creada:', nueva);
-              setListas((prev) => [...prev, nueva]);
               setNuevaLista('');
 
-              if (nueva && nueva._id) {
-                const tarjetas = await obtenerCardsPorLista(token!, nueva._id);
-                const tarjetasAdaptadas = tarjetas.map((c: any) => ({
-                  id: c._id,
-                  titulo: c.titulo,
-                  descripcion: c.descripcion,
-                  completada: c.completada,
-                  listaId: nueva._id,
-                  fechaInicio: c.fechaInicio,
-                  fechaFin: c.fechaFin,
-                  checklist: c.checklist || [],
-                  etiquetas: c.etiquetas || [],
-                }));
+              queryClient.invalidateQueries({ queryKey: ['listas', id] });
 
-                setTareas((prev) => [...prev, ...tarjetasAdaptadas]);
+              if (nueva && nueva._id) {
+                queryClient.invalidateQueries({ queryKey: ['cards', nueva._id] });
               }
             } catch (err: any) {
               alert(err.message || 'Error al crear la lista');
@@ -633,13 +526,17 @@ return (
           <p className="font-semibold mb-1">Descripción:</p>
           <p className="mb-2">{tareaSeleccionada.descripcion}</p>
 
-          {tareaSeleccionada.fecha && (
+          {(tareaSeleccionada.fechaInicio || tareaSeleccionada.fechaFin) && (
             <>
-              <p className="font-semibold mb-1">Fecha:</p>
-              <p className="mb-2">{tareaSeleccionada.fecha}</p>
+              <p className="font-semibold mb-1">Fechas:</p>
+              {tareaSeleccionada.fechaInicio && (
+                <p className="mb-1">Inicio: {tareaSeleccionada.fechaInicio}</p>
+              )}
+              {tareaSeleccionada.fechaFin && (
+                <p className="mb-2">Fin: {tareaSeleccionada.fechaFin}</p>
+              )}
             </>
           )}
-
           {/* Etiquetas */}
           {etiquetas.length > 0 && (
             <div className="mb-4">
@@ -779,7 +676,7 @@ return (
                   prev ? { ...prev, fechaInicio: nuevaFechaInicio } : prev
                 );
 
-                await recargarTareas();
+                queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
               }}
               className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -800,8 +697,7 @@ return (
                 setTareaSeleccionada((prev) =>
                   prev ? { ...prev, fechaFin: nuevaFechaFin } : prev
                 );
-
-                await recargarTareas();
+                queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
               }}
               className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
