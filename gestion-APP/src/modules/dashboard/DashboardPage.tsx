@@ -30,6 +30,7 @@ export const DashboardPage = () => {
       staleTime: 5 * 60 * 1000,
       retry: 1,
     });
+    
 
   if (isLoading) {
     return (

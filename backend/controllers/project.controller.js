@@ -1,5 +1,6 @@
 import { Project } from '../models/Project.js';
 import {User} from '../models/User.js'
+import { Invitacion } from '../models/Invitaciones.js';
 export const crearProyecto = async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
@@ -35,7 +36,10 @@ export const crearProyecto = async (req, res) => {
 export const obtenerProyectos = async (req, res) => {
   try {
     const proyectos = await Project.find({
-      'miembros.usuario': req.user._id,
+      $or: [
+        { 'miembros.usuario': req.user._id },
+        { creador: req.user._id }
+      ]
     }).populate('miembros.usuario', 'nombre correo');
 
     res.status(200).json(proyectos);
@@ -44,6 +48,7 @@ export const obtenerProyectos = async (req, res) => {
     res.status(500).json({ msg: 'Error al obtener proyectos' });
   }
 };
+
 
 export const obtenerProyectoPorId = async (req, res) => {
   try {
@@ -246,5 +251,46 @@ export const eliminarMiembro = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: 'Error al eliminar miembro' });
+  }
+};
+
+export const invitarMiembro = async (req, res) => {
+  const { correo } = req.body;
+  const proyectoId = req.params.id;
+
+  if (!correo) return res.status(400).json({ msg: 'Correo es requerido' });
+
+  try {
+    // Buscar usuario por correo
+    const usuarioInvitado = await User.findOne({ correo: correo.toLowerCase().trim() });
+    if (!usuarioInvitado) return res.status(404).json({ msg: 'Usuario no encontrado' });
+
+    // Verifica si ya es miembro
+    const proyecto = await Project.findById(proyectoId);
+    if (!proyecto) return res.status(404).json({ msg: 'Proyecto no encontrado' });
+    if (proyecto.miembros.includes(usuarioInvitado._id)) {
+      return res.status(400).json({ msg: 'El usuario ya es miembro del proyecto' });
+    }
+
+    // Verifica si ya tiene una invitación pendiente
+    const yaInvitado = await Invitacion.findOne({
+      proyecto: proyectoId,
+      usuarioInvitado: usuarioInvitado._id,
+      estado: 'pendiente',
+    });
+    if (yaInvitado) return res.status(400).json({ msg: 'Ya existe una invitación pendiente para este usuario' });
+
+    // Crea la invitación
+    const invitacion = new Invitacion({
+      proyecto: proyectoId,
+      usuarioInvitado: usuarioInvitado._id,
+      usuarioInvitador: req.user._id,
+    });
+    await invitacion.save();
+
+    res.json({ msg: 'Invitación enviada' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al invitar miembro' });
   }
 };

@@ -8,7 +8,7 @@ import {
 } from 'react';
 
 interface Usuario {
-  id: string;
+  _id: string;
   nombre: string;
   correo: string;
   avatar?: string;
