@@ -29,6 +29,7 @@ app.use('/api', listRoutes);
 app.use('/api', cardRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
+
 // Conectar a MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
@@ -49,12 +50,25 @@ const io = new Server(server, {
 });
 
 // WebSocket - lógica del chat
+const usuariosPorProyecto = {};
+
 io.on('connection', (socket) => {
   console.log('📡 Cliente conectado:', socket.id);
 
-  socket.on('joinRoom', (proyectoId) => {
+  // Guarda el userId en el socket
+  socket.on('joinRoom', ({ proyectoId, userId }) => {
     socket.join(proyectoId);
-    console.log(`🛋️ Usuario unido a sala del proyecto ${proyectoId}`);
+    socket.userId = userId;
+    socket.proyectoId = proyectoId;
+
+    // Añade usuario a la lista de conectados
+    if (!usuariosPorProyecto[proyectoId]) usuariosPorProyecto[proyectoId] = new Set();
+    usuariosPorProyecto[proyectoId].add(userId);
+
+    // Emite la lista actualizada de conectados a la sala
+    io.to(proyectoId).emit('usuarios:conectados', Array.from(usuariosPorProyecto[proyectoId]));
+
+    console.log(`🛋️ Usuario ${userId} unido a sala del proyecto ${proyectoId}`);
   });
 
   socket.on('chat:mensaje', async ({ proyectoId, contenido, usuarioId }) => {
@@ -93,6 +107,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    const { proyectoId, userId } = socket;
+    if (proyectoId && userId && usuariosPorProyecto[proyectoId]) {
+      usuariosPorProyecto[proyectoId].delete(userId);
+      io.to(proyectoId).emit('usuarios:conectados', Array.from(usuariosPorProyecto[proyectoId]));
+    }
     console.log('❌ Cliente desconectado:', socket.id);
   });
 });
