@@ -1,60 +1,100 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { useAuth } from '../../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Layout } from '../../components/Layout';
 
+const SOCKET_URL = 'http://localhost:5000';
+
+interface Usuario {
+  _id: string;
+  nombre: string;
+  correo: string;
+  avatar?: string;
+}
 interface Mensaje {
-  id: number;
-  proyectoId: number;
-  autor: string;
+  _id: string;
   contenido: string;
-  fecha: string;
+  createdAt: string;
+  usuario: Usuario;
 }
 
 export const ProjectChatPage = () => {
-  const { id } = useParams();
+  const [nombreProyecto, setNombreProyecto] = useState('');
+  const [miembros, setMiembros] = useState<Usuario[]>([]);
+  const [conectados, setConectados] = useState<string[]>([]);
+  const { id: proyectoId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { usuario, token } = useAuth();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const [nombreProyecto, setNombreProyecto] = useState('');
+  const socketRef = useRef<Socket | null>(null);
 
-  // Cargar nombre del proyecto
+  // Cargar datos del proyecto y miembros
   useEffect(() => {
-    const storedProyectos = localStorage.getItem('proyectos');
-    if (storedProyectos) {
-      const proyectos = JSON.parse(storedProyectos);
-      const encontrado = proyectos.find((p: any) => p.id === Number(id));
-      if (encontrado) setNombreProyecto(encontrado.nombre);
-    }
-  }, [id]);
+    const fetchProyecto = async () => {
+      const res = await fetch(`http://localhost:5000/api/projects/${proyectoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setNombreProyecto(data.nombre);
+      setMiembros(data.miembros.map((m: any) => m.usuario));
+    };
+    if (proyectoId && token) fetchProyecto();
+  }, [proyectoId, token]);
 
-  // Cargar mensajes
+  // Cargar mensajes históricos
   useEffect(() => {
-    const storedMensajes = localStorage.getItem('mensajes') || '[]';
-    const todos = JSON.parse(storedMensajes);
-    const filtrados = todos.filter((m: Mensaje) => m.proyectoId === Number(id));
-    setMensajes(filtrados);
-  }, [id]);
+    const fetchMensajes = async () => {
+      const res = await fetch(`http://localhost:5000/api/messages/${proyectoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setMensajes(data);
+    };
+    if (proyectoId && token) fetchMensajes();
+  }, [proyectoId, token]);
 
-  // Scroll al final
+  // Conexión y eventos de socket (solo una vez)
+  useEffect(() => {
+    if (!proyectoId || !usuario) return;
+    const socket = io(SOCKET_URL, { transports: ['websocket'] });
+    socketRef.current = socket;
+
+    // Enviamos también el userId para la barra lateral
+    socket.emit('joinRoom', { proyectoId, userId: usuario._id });
+
+    socket.on('chat:nuevoMensaje', (mensaje: Mensaje) => {
+      setMensajes(prev => [...prev, mensaje]);
+    });
+
+    socket.on('usuarios:conectados', (listaIds: string[]) => {
+      setConectados(listaIds);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [proyectoId, usuario]);
+
+  // Scroll automático al final
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes]);
 
-  const handleEnviar = () => {
+  // Enviar mensaje usando el socket ya conectado
+  const handleEnviar = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const contenidoLimpio = nuevoMensaje.trim();
-    if (!contenidoLimpio) return;
+    if (!contenidoLimpio || !usuario) return;
 
-    const nuevo: Mensaje = {
-      id: Date.now(),
-      proyectoId: Number(id),
-      autor: 'Tú',
+    socketRef.current?.emit('chat:mensaje', {
+      proyectoId,
       contenido: contenidoLimpio,
-      fecha: new Date().toLocaleString(),
-    };
-
-    const actualizados = [...mensajes, nuevo];
-    setMensajes(actualizados);
-    localStorage.setItem('mensajes', JSON.stringify([...JSON.parse(localStorage.getItem('mensajes') || '[]'), nuevo]));
+      usuarioId: usuario._id,
+    });
     setNuevoMensaje('');
   };
 
@@ -66,61 +106,134 @@ export const ProjectChatPage = () => {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <button
-        onClick={() => navigate(-1)}
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        ← Volver
-      </button>
+    <Layout>
+      <div className="flex flex-col md:flex-row max-w-6xl mx-auto min-h-[80vh]">
+        {/* Barra lateral de miembros */}
+        <aside className="hidden md:block md:w-64 bg-gray-50 dark:bg-gray-900 border-r dark:border-gray-700 p-4">
+          <h2 className="font-bold mb-4 text-lg">Miembros</h2>
+          <ul>
+            {miembros.map((user) => (
+              <li key={user._id} className="flex items-center gap-2 mb-2">
+                <img
+                  src={user.avatar || '/avatar-default.png'}
+                  alt={user.nombre}
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="truncate">{user.nombre}</span>
+                <span
+                  className={`ml-auto w-3 h-3 rounded-full ${conectados.includes(user._id) ? 'bg-green-500' : 'bg-gray-400'}`}
+                  title={conectados.includes(user._id) ? 'Conectado' : 'Desconectado'}
+                ></span>
+              </li>
+            ))}
+          </ul>
+        </aside>
 
-      <h1 className="text-3xl font-bold mb-4">💬 Chat del proyecto: {nombreProyecto}</h1>
+        {/* Chat principal */}
+        <main className="flex-1 p-2 sm:p-4 md:p-8 text-black dark:text-white flex flex-col min-h-screen">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block"
+          >
+            ← Volver
+          </button>
 
-      <div className="border rounded p-4 mb-4 h-[450px] overflow-y-auto bg-white shadow-inner space-y-4">
-        {mensajes.length === 0 ? (
-          <p className="text-gray-500 italic">Aún no hay mensajes.</p>
-        ) : (
-          mensajes.map((msg) => (
-            <div key={msg.id} className="bg-gray-100 rounded p-3 shadow-sm">
-              <div className="flex justify-between text-sm mb-1 text-gray-700 font-semibold">
-                <span>{msg.autor}</span>
-                <span className="text-xs text-gray-500">{msg.fecha}</span>
-              </div>
-              <p className="text-gray-800 whitespace-pre-line">{msg.contenido}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center sm:text-left">
+            💬 Chat del proyecto: {nombreProyecto}
+          </h1>
+
+          <div
+            className="
+              border rounded p-2 sm:p-4 mb-4
+              h-[calc(100vh-180px)]
+              sm:h-[450px] md:h-[600px]
+              overflow-y-auto
+              shadow-inner transition-colors
+              bg-[linear-gradient(rgba(255,255,255,0.7),rgba(255,255,255,0.7)),url('../public/img/imgfondochat.png')]
+              dark:bg-[linear-gradient(rgba(24,24,27,0.7),rgba(24,24,27,0.7)),url('../public/img/imgfondochat.png')]
+              bg-cover bg-center bg-no-repeat
+            "
+          >
+            <div className="space-y-3">
+              <AnimatePresence initial={false}>
+                {mensajes.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-300 italic">Aún no hay mensajes.</p>
+                ) : (
+                  mensajes.map((msg) => {
+                    const esMio = msg.usuario._id === usuario!._id;
+                    return (
+                      <motion.div
+                        key={msg._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.25 }}
+                        className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`
+                            flex items-start gap-2 max-w-[80%] sm:max-w-[70%]
+                            ${esMio
+                              ? 'bg-blue-500 text-white dark:bg-blue-600 rounded-br-2xl rounded-tl-2xl rounded-bl-2xl ml-4 sm:ml-8'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-2xl rounded-tr-2xl rounded-br-2xl mr-4 sm:mr-8'
+                            }
+                            p-2 sm:p-3 shadow-sm transition-colors
+                          `}
+                        >
+                          {!esMio && (
+                            <img
+                              src={msg.usuario.avatar || '/avatar-default.png'}
+                              alt={msg.usuario.nombre}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          )}
+                          <div>
+                            {!esMio && (
+                              <div className="font-semibold text-xs mb-1">{msg.usuario.nombre}</div>
+                            )}
+                            <div className="break-words">{msg.contenido}</div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {new Date(msg.createdAt).toLocaleTimeString()}
+                            </div>
+                          </div>
+                          {esMio && (
+                            <img
+                              src={msg.usuario.avatar || '/avatar-default.png'}
+                              alt={msg.usuario.nombre}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </AnimatePresence>
+              <div ref={chatEndRef}></div>
             </div>
-          ))
-        )}
-        <div ref={chatEndRef}></div>
+          </div>
+
+          <form className="bg-white dark:bg-gray-800 border rounded shadow p-2 sm:p-3 flex items-end gap-2 transition-colors" onSubmit={handleEnviar}>
+            <textarea
+              value={nuevoMensaje}
+              onChange={e => setNuevoMensaje(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Escribe tu mensaje..."
+              className="w-full p-2 resize-none border rounded focus:outline-none overflow-hidden transition-all bg-white dark:bg-gray-700 dark:text-white"
+              rows={1}
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            >
+              Enviar
+            </button>
+          </form>
+        </main>
+
+
+
       </div>
-
-      <div className="bg-white border rounded shadow p-3 flex items-end gap-2">
-      <textarea
-        ref={(el) => {
-            if (el) {
-            el.style.height = 'auto';
-            el.style.height = el.scrollHeight + 'px';
-            }
-        }}
-        value={nuevoMensaje}
-        onChange={(e) => {
-            setNuevoMensaje(e.target.value);
-            const el = e.target;
-            el.style.height = 'auto'; // Reset height
-            el.style.height = el.scrollHeight + 'px'; // Ajusta al contenido
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder="Escribe tu mensaje..."
-        className="w-full p-2 resize-none border rounded focus:outline-none overflow-hidden transition-all"
-        rows={1}
-    />
-
-        <button
-            onClick={handleEnviar}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-            Enviar
-        </button>
-        </div>
-    </div>
+    </Layout>
   );
 };

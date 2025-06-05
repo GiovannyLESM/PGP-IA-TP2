@@ -6,7 +6,7 @@ import { crearProyecto,
     eliminarProyecto,
     agregarMiembro,
     obtenerMiembros,
-    eliminarMiembro } from '../controllers/project.controller.js';
+    eliminarMiembro, invitarMiembro  } from '../controllers/project.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -19,4 +19,5 @@ router.delete('/:id', protect, eliminarProyecto);
 router.post('/:id/members', protect, agregarMiembro);
 router.get('/:id/members', protect, obtenerMiembros);
 router.delete('/:id/members/:userId', protect, eliminarMiembro);
+router.post('/:id/invitaciones', protect, invitarMiembro);
 export default router;
