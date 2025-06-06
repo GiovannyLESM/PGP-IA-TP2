@@ -515,16 +515,15 @@ return (
     {/* Modal de detalle de tarjeta */}
 
     {tareaSeleccionada && (
-      <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
-        <div className="bg-white dark:bg-gray-800 dark:text-white p-6 rounded shadow max-w-md w-full transition-colors duration-300">
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 dark:text-white p-4 sm:p-6 rounded-lg shadow max-w-[90%] w-full lg:max-w-xl max-h-[90vh] overflow-y-auto transition-colors duration-300">
           <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
 
-          {/* Título y descripción */}
           <p className="font-semibold mb-1">Título:</p>
-          <p className="mb-2">{tareaSeleccionada.titulo}</p>
+          <p className="mb-2 break-words">{tareaSeleccionada.titulo}</p>
 
           <p className="font-semibold mb-1">Descripción:</p>
-          <p className="mb-2">{tareaSeleccionada.descripcion}</p>
+          <p className="mb-2 break-words">{tareaSeleccionada.descripcion}</p>
 
           {(tareaSeleccionada.fechaInicio || tareaSeleccionada.fechaFin) && (
             <>
@@ -537,7 +536,7 @@ return (
               )}
             </>
           )}
-          {/* Etiquetas */}
+
           {etiquetas.length > 0 && (
             <div className="mb-4">
               <p className="font-semibold mb-1">Etiquetas:</p>
@@ -564,7 +563,7 @@ return (
 
           <div className="mt-4">
             <h4 className="font-semibold mb-1">🎨 Nueva etiqueta</h4>
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
               <input
                 type="text"
                 placeholder="Nombre"
@@ -580,14 +579,13 @@ return (
               />
               <button
                 onClick={handleAgregarEtiqueta}
-                className="bg-indigo-600 text-white px-3 rounded hover:bg-indigo-700 text-sm"
+                className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 text-sm"
               >
                 Añadir
               </button>
             </div>
           </div>
 
-          {/* Checklist */}
           {checklist.length > 0 && (
             <div className="mt-4">
               <h3 className="font-semibold mb-2">✅ Checklist:</h3>
@@ -600,16 +598,13 @@ return (
                         checked={item.completado}
                         onChange={(e) => toggleChecklistItem(index, e.target.checked)}
                       />
-
                       {editandoIndex === index ? (
                         <input
                           type="text"
                           value={nuevoNombreChecklist}
                           onChange={(e) => setNuevoNombreChecklist(e.target.value)}
                           onBlur={() => guardarNombreChecklist(index)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') guardarNombreChecklist(index);
-                          }}
+                          onKeyDown={(e) => e.key === 'Enter' && guardarNombreChecklist(index)}
                           autoFocus
                           className="border p-0.5 text-sm rounded"
                         />
@@ -633,15 +628,13 @@ return (
                     </button>
                   </li>
                 ))}
-
               </ul>
             </div>
           )}
 
-          {/* Añadir nuevo ítem al checklist */}
           <div className="mt-4">
             <h4 className="font-semibold mb-1">➕ Añadir checklist</h4>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 placeholder="Nombre del ítem"
@@ -651,56 +644,61 @@ return (
               />
               <button
                 onClick={handleAgregarChecklist}
-                className="bg-green-600 text-white px-2 rounded hover:bg-green-700 text-sm"
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
               >
                 Añadir
               </button>
             </div>
           </div>
 
-          <div className="mt-4 space-y-2">
-            <label className="block text-sm font-medium">📅 Fecha de inicio:</label>
-            <input
-              type="date"
-              value={tareaSeleccionada.fechaInicio?.slice(0, 10) || ''}
-              onChange={async (e) => {
-                const nuevaFechaInicio = e.target.value;
-                const nuevaFechaFin = tareaSeleccionada.fechaFin || new Date(Date.now() + 86400000).toISOString();
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium">📅 Fecha de inicio:</label>
+              <input
+                type="date"
+                value={tareaSeleccionada.fechaInicio?.slice(0, 10) || ''}
+                onChange={async (e) => {
+                  const nuevaFechaInicio = e.target.value;
+                  const nuevaFechaFin = tareaSeleccionada.fechaFin || new Date(Date.now() + 86400000).toISOString();
 
-                await actualizarFechasCard(token!, tareaSeleccionada.id, {
-                  fechaInicio: nuevaFechaInicio,
-                  fechaFin: nuevaFechaFin,
-                });
+                  await actualizarFechasCard(token!, tareaSeleccionada.id, {
+                    fechaInicio: nuevaFechaInicio,
+                    fechaFin: nuevaFechaFin,
+                  });
 
-                setTareaSeleccionada((prev) =>
-                  prev ? { ...prev, fechaInicio: nuevaFechaInicio } : prev
-                );
+                  setTareaSeleccionada((prev) =>
+                    prev ? { ...prev, fechaInicio: nuevaFechaInicio } : prev
+                  );
 
-                queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
-              }}
-              className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
+                  queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
+                }}
+                className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
 
-            <label className="block text-sm font-medium">📅 Fecha de fin:</label>
-            <input
-              type="date"
-              value={tareaSeleccionada.fechaFin?.slice(0, 10) || ''}
-              onChange={async (e) => {
-                const nuevaFechaFin = e.target.value;
-                const nuevaFechaInicio = tareaSeleccionada.fechaInicio || new Date().toISOString();
+            <div>
+              <label className="block text-sm font-medium">📅 Fecha de fin:</label>
+              <input
+                type="date"
+                value={tareaSeleccionada.fechaFin?.slice(0, 10) || ''}
+                onChange={async (e) => {
+                  const nuevaFechaFin = e.target.value;
+                  const nuevaFechaInicio = tareaSeleccionada.fechaInicio || new Date().toISOString();
 
-                await actualizarFechasCard(token!, tareaSeleccionada.id, {
-                  fechaInicio: nuevaFechaInicio,
-                  fechaFin: nuevaFechaFin,
-                });
+                  await actualizarFechasCard(token!, tareaSeleccionada.id, {
+                    fechaInicio: nuevaFechaInicio,
+                    fechaFin: nuevaFechaFin,
+                  });
 
-                setTareaSeleccionada((prev) =>
-                  prev ? { ...prev, fechaFin: nuevaFechaFin } : prev
-                );
-                queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
-              }}
-              className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
+                  setTareaSeleccionada((prev) =>
+                    prev ? { ...prev, fechaFin: nuevaFechaFin } : prev
+                  );
+
+                  queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
+                }}
+                className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end mt-6">
