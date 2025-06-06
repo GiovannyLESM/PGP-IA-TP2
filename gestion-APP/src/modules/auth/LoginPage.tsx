@@ -56,6 +56,7 @@ export const LoginPage = () => {
 
         <input
           type="email"
+          name='correo'
           placeholder="Correo electrónico"
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
@@ -65,6 +66,7 @@ export const LoginPage = () => {
 
         <input
           type="password"
+          name='password'
           placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
