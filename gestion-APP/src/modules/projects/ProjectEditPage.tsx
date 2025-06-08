@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { obtenerProyectoPorId, actualizarProyecto } from '../../api/projects';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../../components/Layout';
+import { Sidebar } from '../../components/Sidebar';
+
 interface Proyecto {
   _id: string;
   nombre: string;
@@ -34,14 +36,12 @@ export const ProjectEditPage = () => {
 
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // useQuery sin onSuccess
   const { data: proyecto, isLoading, isError, error } = useQuery<Proyecto, Error>({
     queryKey: ['proyecto', id],
     queryFn: () => obtenerProyectoPorId(token!, id!),
     enabled: !!token && !!id,
   });
 
-  // Usa useEffect para actualizar el formulario cuando 'proyecto' cambie
   useEffect(() => {
     if (proyecto) {
       setForm({
@@ -73,7 +73,7 @@ export const ProjectEditPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.nombre || !form.descripcion || !form.estado || !form.fecha) {
+    if (!form.nombre || !form.descripcion) {
       setLocalError('Todos los campos son obligatorios');
       return;
     }
@@ -82,83 +82,87 @@ export const ProjectEditPage = () => {
   };
 
   if (isLoading) {
-    return <p className="p-8 text-gray-500">Cargando proyecto...</p>;
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+          <div className="text-lg text-gray-600 dark:text-gray-300 animate-pulse">Cargando proyecto...</div>
+        </div>
+      </Layout>
+    );
   }
 
   if (isError) {
-    return <p className="p-8 text-red-500">Error: {error?.message}</p>;
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+          <div className="text-lg text-red-500 dark:text-red-400">{error?.message}</div>
+        </div>
+      </Layout>
+    );
   }
 
   return (
     <Layout>
-      <div className="p-8 max-w-2xl mx-auto text-black dark:text-white">
-        <h1 className="text-3xl font-bold mb-6">✏️ Editar Proyecto</h1>
+      <div className="flex min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+        <Sidebar />
+        <main className="flex-1 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mt-8">
+            <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-2">
+              ✏️ Editar Proyecto
+            </h1>
 
-        {localError && <p className="text-red-500 dark:text-red-400 mb-4">{localError}</p>}
+            {localError && <p className="text-red-500 dark:text-red-400 mb-4">{localError}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="nombre"
-            placeholder="Nombre del proyecto"
-            value={form.nombre}
-            onChange={handleChange}
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-            required
-          />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">Nombre del proyecto</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  placeholder="Nombre del proyecto"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  required
+                />
+              </div>
 
-          <input
-            type="text"
-            name="descripcion"
-            placeholder="Descripción"
-            value={form.descripcion}
-            onChange={handleChange}
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-            required
-          />
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1 font-medium">Descripción</label>
+                <input
+                  type="text"
+                  name="descripcion"
+                  placeholder="Descripción"
+                  value={form.descripcion}
+                  onChange={handleChange}
+                  className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  required
+                />
+              </div>
 
-          <select
-            name="estado"
-            value={form.estado}
-            onChange={handleChange}
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-            required
-          >
-            <option value="">Seleccionar estado</option>
-            <option value="Planeado">Planeado</option>
-            <option value="En progreso">En progreso</option>
-            <option value="Finalizado">Finalizado</option>
-          </select>
+              {/* Puedes agregar más campos aquí si lo necesitas */}
 
-          <input
-            type="date"
-            name="fecha"
-            value={form.fecha}
-            onChange={handleChange}
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-            required
-          />
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/projects/${id}`)}
+                  className="text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300 font-medium"
+                >
+                  Cancelar
+                </button>
 
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(`/projects/${id}`)}
-              className="text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-              disabled={mutation.isPending}
-            >
-              {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
-            </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-semibold transition"
+                  disabled={mutation.isPending}
+                >
+                  {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </main>
       </div>
     </Layout>
-);
-
+  );
 };

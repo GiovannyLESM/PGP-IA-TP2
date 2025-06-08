@@ -55,22 +55,20 @@ const usuariosPorProyecto = {};
 io.on('connection', (socket) => {
   console.log('📡 Cliente conectado:', socket.id);
 
-  // Guarda el userId en el socket
   socket.on('joinRoom', ({ proyectoId, userId }) => {
     socket.join(proyectoId);
     socket.userId = userId;
     socket.proyectoId = proyectoId;
 
-    // Añade usuario a la lista de conectados
     if (!usuariosPorProyecto[proyectoId]) usuariosPorProyecto[proyectoId] = new Set();
     usuariosPorProyecto[proyectoId].add(userId);
 
-    // Emite la lista actualizada de conectados a la sala
     io.to(proyectoId).emit('usuarios:conectados', Array.from(usuariosPorProyecto[proyectoId]));
 
     console.log(`🛋️ Usuario ${userId} unido a sala del proyecto ${proyectoId}`);
   });
 
+  // Evento para recibir mensajes nuevos
   socket.on('chat:mensaje', async ({ proyectoId, contenido, usuarioId }) => {
     try {
       const proyecto = await Project.findById(proyectoId);
@@ -88,7 +86,6 @@ io.on('connection', (socket) => {
       });
 
       const guardado = await nuevoMensaje.save();
-
       const usuario = await User.findById(usuarioId);
 
       io.to(proyectoId).emit('chat:nuevoMensaje', {
@@ -103,6 +100,20 @@ io.on('connection', (socket) => {
       });
     } catch (error) {
       console.error('❌ Error al guardar mensaje por socket:', error);
+    }
+  });
+
+  // NUEVO: Evento cuando un usuario está escribiendo
+  socket.on('typing', ({ proyectoId, userId }) => {
+    if (proyectoId) {
+      socket.to(proyectoId).emit('usuario:escribiendo', { userId });
+    }
+  });
+
+  // NUEVO: Evento cuando un usuario deja de escribir
+  socket.on('stopTyping', ({ proyectoId, userId }) => {
+    if (proyectoId) {
+      socket.to(proyectoId).emit('usuario:dejoDeEscribir', { userId });
     }
   });
 
