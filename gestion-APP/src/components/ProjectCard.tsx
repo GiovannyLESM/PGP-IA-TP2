@@ -4,11 +4,9 @@ interface ProjectCardProps {
   id: string;
   nombre: string;
   descripcion: string;
-  estado: string;
-  fecha: string;
 }
 
-export const ProjectCard = ({ id, nombre, descripcion, estado, fecha }: ProjectCardProps) => {
+export const ProjectCard = ({ id, nombre, descripcion }: ProjectCardProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -22,10 +20,7 @@ export const ProjectCard = ({ id, nombre, descripcion, estado, fecha }: ProjectC
     >
       <h3 className="text-3xl font-bold mb-1">{nombre}</h3>
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{descripcion}</p>
-      <p className="text-sm">
-        Estado: <span className="font-semibold">{estado}</span>
-      </p>
-      <p className="text-xs text-gray-400 dark:text-gray-500">Fecha: {fecha}</p>
+      
     </div>
   );
 };
