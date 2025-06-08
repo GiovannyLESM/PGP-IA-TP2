@@ -125,12 +125,14 @@ export const ProjectDetailPage = () => {
                 <p className="text-gray-700 dark:text-gray-300 mt-2">{proyecto.descripcion}</p>
               </div>
               <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+                {esPropietario && (
                 <button
                   onClick={() => navigate(`/projects/${proyecto._id}/edit`)}
                   className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
                 >
                   ✏️ Editar
                 </button>
+                )}
                 <button
                   onClick={() => navigate(`/projects/${proyecto._id}/kanban`)}
                   className="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-600 transition"
@@ -143,6 +145,7 @@ export const ProjectDetailPage = () => {
                 >
                   💬 Chat
                 </button>
+                {esPropietario && (
                 <button
                   onClick={handleEliminar}
                   disabled={eliminarMutation.isPending}
@@ -150,6 +153,7 @@ export const ProjectDetailPage = () => {
                 >
                   {eliminarMutation.isPending ? 'Eliminando...' : '🗑️ Eliminar'}
                 </button>
+                )}
                 {esPropietario && (
                   <button
                     className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-500 transition"
