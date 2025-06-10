@@ -3,16 +3,12 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
 from dotenv import load_dotenv
 
-# Cargar variables de entorno (.env)
+# Configurar Flask y entorno
 load_dotenv()
-
-# Configurar modelo LLM
+app = Flask(__name__)
 llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.3)
 
-# Flask
-app = Flask(__name__)
-
-# Diccionario para mantener el historial de cada sesión de usuario
+# Historial por sesión
 conversaciones = {}
 
 
@@ -25,18 +21,28 @@ def planificar():
     if sesion_id not in conversaciones:
         conversaciones[sesion_id] = [
             SystemMessage(content="""
-Eres un experto en planificación de proyectos web usando tableros tipo Trello.
-Tu objetivo es proponer listas personalizadas (como 'Diseño Web', 'Backend', etc.).
-Cada lista debe tener tareas con título y descripción.
-Primero responde en lenguaje natural (no JSON) y pregunta si desea confirmar.
-Cuando el usuario confirme, recién devuelves el JSON con este formato:
+Eres un asistente especializado exclusivamente en planificación de proyectos usando tableros Kanban.
+No debes responder a preguntas fuera de ese contexto, como chistes, bromas, temas generales o personales.
+
+Tu objetivo es:
+1. Leer la descripción del proyecto.
+2. Proponer listas con tareas, explicándolas en lenguaje natural primero.
+3. Preguntar al usuario si desea confirmar la planificación antes de crearla como JSON.
+
+Reglas importantes:
+- No generes el JSON hasta que el usuario confirme claramente.
+- Si el usuario dice cosas como "sí", "me gusta", "dale", "perfecto", "está bien", entonces considera que ha confirmado.
+- Si el usuario dice "no", "cambia esto", "ajusta", "agrega otra lista", "me parece mal", "no estoy seguro", entonces considera que NO ha confirmado y ajusta la planificación.
+- Si hay ambigüedad (por ejemplo: "no sé", "mmm tal vez", "falta algo"), responde con una pregunta aclaratoria o haz sugerencias.
+
+Cuando confirmes, responde solo con el JSON en este formato exacto:
 
 {
   "listas": [
     {
       "nombre": "Nombre de la lista",
       "tareas": [
-        { "titulo": "Título de la tarea", "descripcion": "Descripción breve" }
+        { "titulo": "Título de la tarea", "descripcion": "Descripción breve de la tarea" }
       ]
     }
   ]
@@ -44,7 +50,10 @@ Cuando el usuario confirme, recién devuelves el JSON con este formato:
 """)
         ]
 
+    # Agregar el nuevo mensaje del usuario
     conversaciones[sesion_id].append(HumanMessage(content=mensaje))
+
+    # Obtener respuesta del modelo
     respuesta = llm.invoke(conversaciones[sesion_id])
     conversaciones[sesion_id].append(AIMessage(content=respuesta.content))
 
