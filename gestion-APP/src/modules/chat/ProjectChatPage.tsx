@@ -146,7 +146,7 @@ export const ProjectChatPage = () => {
       <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex flex-col md:flex-row max-w-6xl mx-auto min-h-[80vh]">
-          {/* Barra lateral de miembros */}
+          {/* Barra lateral de miembros */} 
           <aside className="hidden md:block md:w-64 bg-gray-50 dark:bg-gray-900 border-r dark:border-gray-700 p-4">
             <h2 className="font-bold mb-4 text-lg">Miembros</h2>
             <ul>
