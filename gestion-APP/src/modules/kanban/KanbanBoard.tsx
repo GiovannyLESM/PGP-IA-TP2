@@ -344,6 +344,7 @@ return (
                 <Droppable droppableId={lista._id} key={lista._id}>
                   {(provided) => (
                     <div
+                      data-testid="lista-kanban"
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className="bg-gray-100 dark:bg-gray-800 p-4 rounded min-w-[320px] max-w-xs transition-colors flex-shrink-0 shadow-lg"
@@ -369,6 +370,7 @@ return (
                                     {tarea.etiquetas.map((etiqueta, idx) => (
                                       <span
                                         key={idx}
+                                        data-testid="etiqueta-creada"
                                         className="px-2 py-0.5 text-xs rounded font-medium text-white"
                                         style={{ backgroundColor: etiqueta.color }}
                                       >
@@ -420,6 +422,7 @@ return (
                         >
                           <input
                             type="text"
+                            name='tarea'
                             placeholder="Título de la tarea"
                             value={nuevaTarea[lista._id]?.titulo || ''}
                             onChange={(e) =>
@@ -435,6 +438,7 @@ return (
                           />
                           <input
                             type="text"
+                            name='descripcion'
                             placeholder="Descripción"
                             value={nuevaTarea[lista._id]?.descripcion || ''}
                             onChange={(e) =>
@@ -519,7 +523,7 @@ return (
 
         {/* Modal de detalle de tarea */}
         {tareaSeleccionada && (
-          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
+          <div data-testid="modal-tarea" className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
             <div className="bg-white dark:bg-gray-800 dark:text-white p-6 rounded shadow max-w-md w-full transition-colors duration-300">
               <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
               <p className="font-semibold mb-1">Título:</p>
@@ -566,6 +570,7 @@ return (
                 <h4 className="font-semibold mb-1">🎨 Nueva etiqueta</h4>
                 <div className="flex gap-2 items-center">
                   <input
+                    data-testid="input-etiqueta"
                     type="text"
                     placeholder="Nombre"
                     value={nuevaEtiqueta.nombre}
@@ -573,12 +578,14 @@ return (
                     className="flex-1 p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                   <input
+                    data-testid="color-etiqueta"
                     type="color"
                     value={nuevaEtiqueta.color}
                     onChange={(e) => setNuevaEtiqueta((prev) => ({ ...prev, color: e.target.value }))}
                     className="w-10 h-10 border p-0"
                   />
                   <button
+                    data-testid="btn-agregar-etiqueta"
                     onClick={handleAgregarEtiqueta}
                     className="bg-indigo-600 text-white px-3 rounded hover:bg-indigo-700 text-sm"
                   >
@@ -642,12 +649,14 @@ return (
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    data-testid="input-checklist"
                     placeholder="Nombre del ítem"
                     value={nuevoChecklist}
                     onChange={(e) => setNuevoChecklist(e.target.value)}
                     className="flex-1 p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                   <button
+                    data-testid="btn-agregar-checklist"
                     onClick={handleAgregarChecklist}
                     className="bg-green-600 text-white px-2 rounded hover:bg-green-700 text-sm"
                   >
@@ -659,6 +668,7 @@ return (
               <div className="mt-4 space-y-2">
                 <label className="block text-sm font-medium">📅 Fecha de inicio:</label>
                 <input
+                  name="fechaInicio"
                   type="date"
                   value={tareaSeleccionada.fechaInicio?.slice(0, 10) || ''}
                   onChange={async (e) => {
@@ -681,6 +691,7 @@ return (
 
                 <label className="block text-sm font-medium">📅 Fecha de fin:</label>
                 <input
+                  name="fechaFin"
                   type="date"
                   value={tareaSeleccionada.fechaFin?.slice(0, 10) || ''}
                   onChange={async (e) => {
@@ -716,6 +727,4 @@ return (
     </div>
   </Layout>
 );
-
-
 }
