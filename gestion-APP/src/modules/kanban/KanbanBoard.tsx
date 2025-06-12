@@ -224,7 +224,7 @@ const handleCrearCard = async (e: React.FormEvent, listaId: string) => {
 
 
 // Query para cargar listas
-const { data: listas = [], isLoading: isLoadingListas, error: errorListas } = useQuery({
+const { data: listas = []} = useQuery({
   queryKey: ['listas', id],
   queryFn: () => obtenerListasPorProyecto(token!, id!),
   enabled: !!token && !!id,
