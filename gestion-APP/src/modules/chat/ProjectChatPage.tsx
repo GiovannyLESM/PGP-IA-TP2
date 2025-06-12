@@ -32,9 +32,9 @@ export const ProjectChatPage = () => {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // --- NUEVO: Estados para "escribiendo" ---
+  //Estados para "escribiendo" ---
   const [usuariosEscribiendo, setUsuariosEscribiendo] = useState<string[]>([]);
-  const escribiendoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const escribiendoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [escribiendo, setEscribiendo] = useState(false);
 
   // Cargar datos del proyecto y miembros
@@ -70,7 +70,7 @@ export const ProjectChatPage = () => {
 
     socket.emit('joinRoom', { proyectoId, userId: usuario._id });
 
-    socket.on('chat:nuevoMensaje', (mensaje: Mensaje) => {
+    socket.on('chat:nuevoMensaje', (mensaje) => {
       setMensajes(prev => [...prev, mensaje]);
     });
 
