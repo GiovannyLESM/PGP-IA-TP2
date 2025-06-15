@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../../components/Layout';
 import { Sidebar } from '../../components/Sidebar';
 const SOCKET_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../../api/config';
 
 interface Usuario {
   _id: string;
@@ -40,7 +41,7 @@ export const ProjectChatPage = () => {
   // Cargar datos del proyecto y miembros
   useEffect(() => {
     const fetchProyecto = async () => {
-      const res = await fetch(`http://localhost:5000/api/projects/${proyectoId}`, {
+      const res = await fetch(`${API_BASE_URL}/projects/${proyectoId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -53,7 +54,7 @@ export const ProjectChatPage = () => {
   // Cargar mensajes históricos
   useEffect(() => {
     const fetchMensajes = async () => {
-      const res = await fetch(`http://localhost:5000/api/messages/${proyectoId}`, {
+      const res = await fetch(`${API_BASE_URL}/messages/${proyectoId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -70,7 +71,7 @@ export const ProjectChatPage = () => {
 
     socket.emit('joinRoom', { proyectoId, userId: usuario._id });
 
-    socket.on('chat:nuevoMensaje', (mensaje) => {
+    socket.on('chat:nuevoMensaje', (mensaje: Mensaje) => {
       setMensajes(prev => [...prev, mensaje]);
     });
 

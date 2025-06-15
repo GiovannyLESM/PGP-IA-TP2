@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
+import { API_BASE_URL } from '../api/config';
 // --- Interfaces ---
 export interface Usuario {
   _id: string;
@@ -30,7 +30,7 @@ export interface Invitacion {
 
 // --- API helpers ---
 const fetchProyectos = async (token: string): Promise<Proyecto[]> => {
-  const res = await fetch('http://localhost:5000/api/projects', {
+  const res = await fetch(`${API_BASE_URL}/projects`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Error al obtener proyectos');
@@ -38,7 +38,7 @@ const fetchProyectos = async (token: string): Promise<Proyecto[]> => {
 };
 
 const fetchInvitacionesPendientes = async (token: string): Promise<Invitacion[]> => {
-  const res = await fetch('http://localhost:5000/api/users/invitaciones', {
+  const res = await fetch(`${API_BASE_URL}/users/invitaciones`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('No se pudo obtener invitaciones');
@@ -46,7 +46,7 @@ const fetchInvitacionesPendientes = async (token: string): Promise<Invitacion[]>
 };
 
 const aceptarInvitacion = async (token: string, id: string) => {
-  const res = await fetch(`http://localhost:5000/api/users/invitaciones/${id}/aceptar`, {
+  const res = await fetch(`${API_BASE_URL}/users/invitaciones/${id}/aceptar`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -55,7 +55,7 @@ const aceptarInvitacion = async (token: string, id: string) => {
 };
 
 const rechazarInvitacion = async (token: string, id: string) => {
-  const res = await fetch(`http://localhost:5000/api/users/invitaciones/${id}/rechazar`, {
+  const res = await fetch(`${API_BASE_URL}/users/invitaciones/${id}/rechazar`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` }
   });

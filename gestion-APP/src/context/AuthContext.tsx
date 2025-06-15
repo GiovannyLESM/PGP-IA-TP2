@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../api/config';
 // src/context/AuthContext.tsx
 import {
   createContext,
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPerfil = async (jwt: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/users/me', {
+      const res = await fetch(`${API_BASE_URL}/users/me`, {
         headers: { Authorization: `Bearer ${jwt}` },
       });
 

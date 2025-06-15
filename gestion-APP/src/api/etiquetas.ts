@@ -1,4 +1,5 @@
-const base = 'http://localhost:5000/api';
+import { API_BASE_URL } from './config';
+const base = `${API_BASE_URL}`;
 
 export const obtenerEtiquetas = async (token: string, cardId: string) => {
   const res = await fetch(`${base}/cards/${cardId}/etiquetas`, {

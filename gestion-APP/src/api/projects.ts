@@ -1,6 +1,7 @@
+import { API_BASE_URL } from './config';
 // src/api/projects.ts
 export const obtenerProyectos = async (token: string) => {
-  const res = await fetch('http://localhost:5000/api/projects', {
+  const res = await fetch(`${API_BASE_URL}/projects`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -20,7 +21,7 @@ export const crearProyecto = async (
     fecha: string;
   }
 ) => {
-  const res = await fetch('http://localhost:5000/api/projects', {
+  const res = await fetch(`${API_BASE_URL}/projects`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -39,7 +40,7 @@ export const crearProyecto = async (
 
 
 export const obtenerProyectoPorId = async (token: string, id: string) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -60,7 +61,7 @@ export const actualizarProyecto = async (
     fecha: string;
   }
 ) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ export const actualizarProyecto = async (
 };
 
 export const eliminarProyecto = async (token: string, id: string) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,

@@ -6,9 +6,10 @@ import { useAuth } from '../../context/AuthContext';
 import { obtenerProyectoPorId, eliminarProyecto } from '../../api/projects';
 import { Layout } from '../../components/Layout';
 import { Sidebar } from '../../components/Sidebar';
+import { API_BASE_URL } from '../../api/config';
 
 const buscarUsuarioPorCorreo = async (token: string, correo: string) => {
-  const res = await fetch(`http://localhost:5000/api/users/buscar?correo=${correo}`, {
+  const res = await fetch(`${API_BASE_URL}/users/buscar?correo=${correo}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Usuario no encontrado');
@@ -16,7 +17,7 @@ const buscarUsuarioPorCorreo = async (token: string, correo: string) => {
 };
 
 const enviarInvitacion = async (token: string, proyectoId: string, correo: string) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${proyectoId}/invitaciones`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${proyectoId}/invitaciones`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

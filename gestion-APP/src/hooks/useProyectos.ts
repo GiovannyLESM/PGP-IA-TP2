@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../api/config';
 // Usuario
 export interface Usuario {
   _id: string;
@@ -44,7 +45,7 @@ export const useProyectos = () => {
   return useQuery<Proyecto[]>({
     queryKey: ['proyectos', token],
     queryFn: async () => {
-      const res = await fetch('http://localhost:5000/api/projects', {
+      const res = await fetch(`${API_BASE_URL}/projects`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Error al obtener proyectos');

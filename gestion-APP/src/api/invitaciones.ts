@@ -1,6 +1,7 @@
 // Buscar usuario por correo
+import { API_BASE_URL } from './config';
 export const buscarUsuarioPorCorreo = async (token: string, correo: string) => {
-  const res = await fetch(`http://localhost:5000/api/users/buscar?correo=${correo}`, {
+  const res = await fetch(`${API_BASE_URL}/users/buscar?correo=${correo}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('Usuario no encontrado');
@@ -9,7 +10,7 @@ export const buscarUsuarioPorCorreo = async (token: string, correo: string) => {
 
 // Enviar invitación
 export const enviarInvitacion = async (token: string, proyectoId: string, correo: string) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${proyectoId}/invitaciones`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${proyectoId}/invitaciones`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

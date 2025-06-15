@@ -1,5 +1,6 @@
+import { API_BASE_URL } from './config';
 export const obtenerListasPorProyecto = async (token: string, proyectoId: string) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${proyectoId}/listas`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${proyectoId}/listas`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -15,7 +16,7 @@ export const crearLista = async (
   proyectoId: string,
   nombre: string
 ) => {
-  const res = await fetch(`http://localhost:5000/api/projects/${proyectoId}/listas`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${proyectoId}/listas`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

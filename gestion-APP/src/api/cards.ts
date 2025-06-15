@@ -1,5 +1,7 @@
+import { API_BASE_URL } from "./config";
+
 export const obtenerCardsPorLista = async (token: string, listaId: string) => {
-  const res = await fetch(`http://localhost:5000/api/listas/${listaId}/tarjetas`, {
+  const res = await fetch(`${API_BASE_URL}/listas/${listaId}/tarjetas`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -18,7 +20,7 @@ export const crearCardEnLista = async (
     descripcion: string;
   }
 ) => {
-  const res = await fetch(`http://localhost:5000/api/listas/${listaId}/tarjetas`, {
+  const res = await fetch(`${API_BASE_URL}/listas/${listaId}/tarjetas`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,7 +39,7 @@ export const actualizarFechasCard = async (
   cardId: string,
   fechas: { fechaInicio?: string; fechaFin?: string }
 ) => {
-  const res = await fetch(`http://localhost:5000/api/tarjetas/${cardId}`, {
+  const res = await fetch(`${API_BASE_URL}/tarjetas/${cardId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

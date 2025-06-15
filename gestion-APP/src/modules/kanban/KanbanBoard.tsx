@@ -23,6 +23,7 @@ import {
 } from '../../api/etiquetas';
 import { Layout } from '../../components/Layout';
 import { Sidebar } from '../../components/Sidebar';
+import { API_BASE_URL } from '../../api/config';
 interface ChecklistItem {
   nombre: string;
   completado: boolean;
@@ -160,7 +161,7 @@ const toggleChecklistItem = async (index: number, completado: boolean) => {
     // Si todos los ítems están completados, marcar tarjeta como completada
     const todosCompletados = nuevoChecklist.every((item: ChecklistItem) => item.completado);
 
-    await fetch(`http://localhost:5000/api/tarjetas/${tareaSeleccionada.id}/completada`, {
+    await fetch(`${API_BASE_URL}/tarjetas/${tareaSeleccionada.id}/completada`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ const abrirDetalleTarea = async (tarea: Tarea) => {
 };
 const toggleCompletada = async (tareaId: string, completada: boolean) => {
   try {
-    await fetch(`http://localhost:5000/api/tarjetas/${tareaId}/completada`, {
+    await fetch(`${API_BASE_URL}/tarjetas/${tareaId}/completada`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -286,7 +287,7 @@ const handleDragEnd = async (result: DropResult) => {
 
   const moverCard = async (cardId: string, nuevaListaId: string) => {
   try {
-    await fetch(`http://localhost:5000/api/tarjetas/${cardId}/mover`, {
+    await fetch(`${API_BASE_URL}/tarjetas/${cardId}/mover`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

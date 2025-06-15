@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-
+import { API_BASE_URL } from '../api/config';
 // Interfaces según tu modelo
 export interface Usuario {
   _id: string;
@@ -27,7 +27,7 @@ export interface Invitacion {
 
 // Cambia la URL si tu endpoint es diferente
 const fetchInvitacionesPendientes = async (token: string): Promise<Invitacion[]> => {
-  const res = await fetch('http://localhost:5000/api/users/invitaciones', {
+  const res = await fetch(`${API_BASE_URL}/users/invitaciones`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error('No se pudo obtener invitaciones');

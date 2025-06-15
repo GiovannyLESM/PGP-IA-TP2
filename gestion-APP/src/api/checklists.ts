@@ -1,9 +1,10 @@
+import { API_BASE_URL } from './config';
 export const agregarChecklistItem = async (
   token: string,
   cardId: string,
   item: { nombre: string; completado: boolean }
 ) => {
-  const res = await fetch(`http://localhost:5000/api/cards/${cardId}/checklist`, {
+  const res = await fetch(`${API_BASE_URL}/cards/${cardId}/checklist`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -23,7 +24,7 @@ export const actualizarChecklistItem = async (
   index: number,
   actualizado: { nombre: string; completado: boolean }
 ) => {
-  const res = await fetch(`http://localhost:5000/api/cards/${cardId}/checklist/${index}`, {
+  const res = await fetch(`${API_BASE_URL}/cards/${cardId}/checklist/${index}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -45,7 +46,7 @@ export const eliminarChecklistItem = async (
   cardId: string,
   index: number
 ) => {
-  const res = await fetch(`http://localhost:5000/api/cards/${cardId}/checklist/${index}`, {
+  const res = await fetch(`${API_BASE_URL}/cards/${cardId}/checklist/${index}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -59,7 +60,7 @@ export const eliminarChecklistItem = async (
 
 
 export const obtenerChecklist = async (token: string, cardId: string) => {
-  const res = await fetch(`http://localhost:5000/api/cards/${cardId}/checklist`, {
+  const res = await fetch(`${API_BASE_URL}/cards/${cardId}/checklist`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
