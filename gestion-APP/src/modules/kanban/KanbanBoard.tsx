@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useEditarCard, useEliminarCard } from '../../hooks/useCardMutations';
+import { useEditarLista, useEliminarLista } from '../../hooks/useListMutations';
 import {
   DragDropContext,
   Droppable,
@@ -8,8 +10,8 @@ import {
   DropResult,
 } from '@hello-pangea/dnd';
 import { useAuth } from '../../context/AuthContext';
-import { obtenerListasPorProyecto, crearLista } from '../../api/lists';
-import { obtenerCardsPorLista, crearCardEnLista, actualizarFechasCard } from '../../api/cards';
+import { obtenerListasPorProyecto, crearLista} from '../../api/lists';
+import { obtenerCardsPorLista, crearCardEnLista, actualizarFechasCard} from '../../api/cards';
 import {
   agregarChecklistItem,
   actualizarChecklistItem,
@@ -49,7 +51,8 @@ interface Tarea {
   checklist?: ChecklistItem[];
   etiquetas?: Etiqueta[];
 }
-
+const { mutate: editarListaMutate } = useEditarLista();
+const { mutate: eliminarListaMutate } = useEliminarLista();
 export const KanbanBoard = () => {
 
   const { id } = useParams();
@@ -67,6 +70,8 @@ export const KanbanBoard = () => {
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState({ nombre: '', color: '#000000' });
   const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
   const [nuevoNombreChecklist, setNuevoNombreChecklist] = useState('');
+
+  
 
   const obtenerProgresoChecklist = (checklist?: ChecklistItem[]) => {
   if (!checklist || checklist.length === 0) return null;
