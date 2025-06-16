@@ -11,6 +11,24 @@ export const obtenerCardsPorLista = async (token: string, listaId: string) => {
   if (!res.ok) throw new Error(data.msg || 'Error al obtener tarjetas');
   return data;
 };
+// api/cards.ts
+export const obtenerCardPorId = async (
+  token: string,
+  listaId: string,
+  cardId: string
+) => {
+  const res = await fetch(`${API_BASE_URL}/listas/${listaId}/tarjetas`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },  
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || 'Error al obtener tarjetas');
+  // Busca la card por su ID y adapta el resultado
+  const card = data.find((c: any) => c._id === cardId);
+  // Si la encuentra, devuelve el objeto con .id además de ._id
+  return card ? { ...card, id: card._id } : undefined;
+};
 
 export const crearCardEnLista = async (
   token: string,
@@ -61,7 +79,7 @@ export const editarCard = async (
     descripcion: string;
   }
 ) => {
-  const res = await fetch(`${API_BASE_URL}/tarjetas/${cardId}`, {
+  const res = await fetch(`${API_BASE_URL}/cards/${cardId}`, {
     method: 'PUT', // o PATCH según tu backend, pero por convención usa PUT para editar
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +97,7 @@ export const eliminarCard = async (
   token: string,
   cardId: string
 ) => {
-  const res = await fetch(`${API_BASE_URL}/tarjetas/${cardId}`, {
+  const res = await fetch(`${API_BASE_URL}/cards/${cardId}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,

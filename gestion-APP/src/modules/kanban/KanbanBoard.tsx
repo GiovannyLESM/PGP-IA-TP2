@@ -11,7 +11,7 @@ import {
 } from '@hello-pangea/dnd';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerListasPorProyecto, crearLista} from '../../api/lists';
-import { obtenerCardsPorLista, crearCardEnLista, actualizarFechasCard} from '../../api/cards';
+import { obtenerCardsPorLista, crearCardEnLista, actualizarFechasCard, obtenerCardPorId} from '../../api/cards';
 import {
   agregarChecklistItem,
   actualizarChecklistItem,
@@ -51,9 +51,12 @@ interface Tarea {
   checklist?: ChecklistItem[];
   etiquetas?: Etiqueta[];
 }
-const { mutate: editarListaMutate } = useEditarLista();
-const { mutate: eliminarListaMutate } = useEliminarLista();
 export const KanbanBoard = () => {
+
+  const { mutate: editarListaMutate } = useEditarLista();
+  const { mutate: eliminarListaMutate } = useEliminarLista();
+  const [editandoListaId, setEditandoListaId] = useState<string | null>(null);
+  const [nuevoNombreLista, setNuevoNombreLista] = useState<string>('');
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -70,7 +73,12 @@ export const KanbanBoard = () => {
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState({ nombre: '', color: '#000000' });
   const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
   const [nuevoNombreChecklist, setNuevoNombreChecklist] = useState('');
-
+  
+  const { mutate: editarCardMutate } = useEditarCard();
+  const { mutate: eliminarCardMutate } = useEliminarCard();
+  const [editandoCard, setEditandoCard] = useState(false);
+  const [nuevoTitulo, setNuevoTitulo] = useState('');
+  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
   
 
   const obtenerProgresoChecklist = (checklist?: ChecklistItem[]) => {
@@ -325,7 +333,27 @@ const guardarNombreChecklist = async (index: number) => {
     alert('Error al actualizar nombre del ítem');
   }
 };
-
+const handleGuardarCambios = () => {
+  if (!token) {
+      // Puedes redirigir al login o mostrar un error
+      return <div>No autenticado</div>;
+    }
+  editarCardMutate(
+    {
+      token,
+      cardId: tareaSeleccionada!.id,
+      titulo: nuevoTitulo,
+      descripcion: nuevaDescripcion,
+    },
+    {
+      onSuccess: async () => {
+        // Refresca la card desde la API
+        const cardActualizada = await obtenerCardPorId(token, tareaSeleccionada!.listaId, tareaSeleccionada!.id);
+        setTareaSeleccionada(cardActualizada);
+      },
+    }
+  );
+};
 return (
   <Layout>
     <div className="flex min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
@@ -355,7 +383,59 @@ return (
                       {...provided.droppableProps}
                       className="bg-gray-100 dark:bg-gray-800 p-4 rounded min-w-[320px] max-w-xs transition-colors flex-shrink-0 shadow-lg"
                     >
-                      <h2 className="text-xl font-semibold mb-3">{lista.nombre}</h2>
+                      <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                      {editandoListaId === lista._id ? (
+                        <input
+                          value={nuevoNombreLista}
+                          onChange={e => setNuevoNombreLista(e.target.value)}
+                          onBlur={() => {
+                            if (!token) {
+                              // Puedes redirigir al login o mostrar un error
+                              return <div>No autenticado</div>;
+                            }
+                            editarListaMutate({ token, listaId: lista._id, nombre: nuevoNombreLista });
+                            setEditandoListaId(null);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              if (!token) {
+                                // Puedes redirigir al login o mostrar un error
+                                return <div>No autenticado</div>;
+                              }
+                              editarListaMutate({ token, listaId: lista._id, nombre: nuevoNombreLista });
+                              setEditandoListaId(null);
+                            }
+                          }}
+                          autoFocus
+                          className="border rounded px-2 py-1 text-sm"
+                        />
+                      ) : (
+                        <>
+                          {lista.nombre}
+                          <button
+                            onClick={() => {
+                              setEditandoListaId(lista._id);
+                              setNuevoNombreLista(lista.nombre);
+                            }}
+                            className="ml-2 text-blue-500 hover:text-blue-700"
+                            title="Editar lista"
+                          >✏️</button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('¿Eliminar esta lista y todas sus tarjetas?')) {
+                                if (!token) {
+                                  // Puedes redirigir al login o mostrar un error
+                                  return <div>No autenticado</div>;
+                                }
+                                eliminarListaMutate({ token, listaId: lista._id });
+                              }
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                            title="Eliminar lista"
+                          >🗑️</button>
+                        </>
+                      )}
+                    </h2>
                       {tareas
                         .filter((t) => t.listaId === lista._id)
                         .map((tarea, index) => (
@@ -530,21 +610,89 @@ return (
         {/* Modal de detalle de tarea */}
         {tareaSeleccionada && (
           <div data-testid="modal-tarea" className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="bg-white dark:bg-gray-800 dark:text-white p-6 rounded shadow max-w-md w-full transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 dark:text-white p-6 rounded shadow max-w-md w-full transition-colors duration-300
+  max-h-[90vh] overflow-y-auto relative">
               <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
-              <p className="font-semibold mb-1">Título:</p>
-              <p className="mb-2">{tareaSeleccionada.titulo}</p>
-              <p className="font-semibold mb-1">Descripción:</p>
-              <p className="mb-2">{tareaSeleccionada.descripcion}</p>
-              {(tareaSeleccionada.fechaInicio || tareaSeleccionada.fechaFin) && (
+              {editandoCard ? (
                 <>
-                  <p className="font-semibold mb-1">Fechas:</p>
-                  {tareaSeleccionada.fechaInicio && (
-                    <p className="mb-1">Inicio: {tareaSeleccionada.fechaInicio}</p>
-                  )}
-                  {tareaSeleccionada.fechaFin && (
-                    <p className="mb-2">Fin: {tareaSeleccionada.fechaFin}</p>
-                  )}
+                  <input
+                    value={nuevoTitulo} 
+                    onChange={e => setNuevoTitulo(e.target.value)}
+                    className="mb-2 border rounded px-2 py-1 w-full"
+                  />
+                  <textarea
+                    value={nuevaDescripcion}
+                    onChange={e => setNuevaDescripcion(e.target.value)}
+                    className="mb-2 border rounded px-2 py-1 w-full"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!token) {
+                          alert('No autenticado');
+                          return;
+                        }
+                        editarCardMutate(
+                          {
+                            token,
+                            cardId: tareaSeleccionada!.id,
+                            titulo: nuevoTitulo,
+                            descripcion: nuevaDescripcion,
+                          },
+                          {
+                            onSuccess: async () => {
+                              const cardActualizada = await obtenerCardPorId(token, tareaSeleccionada!.listaId, tareaSeleccionada!.id);
+                              setTareaSeleccionada(cardActualizada);
+                              setEditandoCard(false);
+                            },
+                          }
+                        );
+                      }}
+                      className="bg-green-600 text-white px-4 py-2 rounded"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => setEditandoCard(false)}
+                      className="bg-gray-300 text-black px-4 py-2 rounded"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold mb-1">Título:</p>
+                  <p className="mb-2">{tareaSeleccionada.titulo}</p>
+                  <p className="font-semibold mb-1">Descripción:</p>
+                  <p className="mb-2">{tareaSeleccionada.descripcion}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => {
+                        setEditandoCard(true);
+                        setNuevoTitulo(tareaSeleccionada.titulo);
+                        setNuevaDescripcion(tareaSeleccionada.descripcion);
+                      }}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('¿Eliminar esta tarjeta?')) {
+                          if (!token) {
+                            alert('No autenticado');
+                            return;
+                          }
+                          eliminarCardMutate({ token, cardId: tareaSeleccionada!.id });
+                          setTareaSeleccionada(null); // Cierra el modal
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </div>
                 </>
               )}
               {/* Etiquetas */}
