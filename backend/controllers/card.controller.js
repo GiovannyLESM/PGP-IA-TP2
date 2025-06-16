@@ -422,3 +422,32 @@ export const actualizarTarjeta = async (req, res) => {
     res.status(500).json({ msg: 'Error al actualizar la tarjeta' });
   }
 };
+
+export const eliminarCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const card = await Card.findById(id);
+    if (!card) return res.status(404).json({ msg: 'Tarjeta no encontrada' });
+
+    const lista = await List.findById(card.listaId);
+    if (!lista) return res.status(404).json({ msg: 'Lista no encontrada' });
+
+    const proyecto = await Project.findById(lista.proyectoId);
+    if (!proyecto) return res.status(404).json({ msg: 'Proyecto no encontrado' });
+
+    // Verifica si el usuario es miembro
+    const esMiembro = proyecto.miembros.some((m) =>
+      m.usuario.toString() === req.user._id.toString()
+    );
+    if (!esMiembro) {
+      return res.status(403).json({ msg: 'No tienes permiso para eliminar tarjetas' });
+    }
+
+    await card.deleteOne();
+    res.json({ msg: 'Tarjeta eliminada correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al eliminar la tarjeta' });
+  }
+};

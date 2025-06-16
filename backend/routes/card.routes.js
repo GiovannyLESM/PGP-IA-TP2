@@ -14,7 +14,10 @@ import {
     obtenerTarjetasPorLista, 
     moverCard,
     actualizarEstadoCompletada,
-    obtenerChecklist, obtenerEtiquetasCard, actualizarTarjeta  } from '../controllers/card.controller.js';
+    obtenerChecklist,
+    obtenerEtiquetasCard, 
+    actualizarTarjeta, 
+    eliminarCard  } from '../controllers/card.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -36,6 +39,8 @@ router.patch('/tarjetas/:id/completada', protect, actualizarEstadoCompletada);
 router.get('/cards/:id/checklist', protect, obtenerChecklist);
 router.get('/cards/:id/etiquetas', protect, obtenerEtiquetasCard);
 router.patch('/tarjetas/:id', protect, actualizarTarjeta);
+router.put('/cards/:id',protect, editarTarjeta);
+router.delete('/cards/:id',protect, eliminarCard);
 
 export default router;
 
