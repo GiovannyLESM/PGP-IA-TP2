@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Proyecto {
-  id: number;
+  _id: string;
   nombre: string;
   descripcion: string;
 }
@@ -10,17 +10,24 @@ interface Proyecto {
 export const ChatPage = () => {
   const navigate = useNavigate();
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('proyectos');
-    if (stored) {
-      setProyectos(JSON.parse(stored));
-    }
+    fetch('/api/projects', {
+      // Si necesitas token:
+      // headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setProyectos(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return (
     <div className="p-8">
-        <button
+      <button
         onClick={() => navigate('/dashboard')}
         className="text-blue-600 hover:underline mb-4 inline-block"
       >
@@ -28,24 +35,26 @@ export const ChatPage = () => {
       </button>
       <h1 className="text-3xl font-bold mb-6">💬 Chats por Proyecto</h1>
 
-      {proyectos.length === 0 ? (
+      {loading ? (
+        <p className="text-gray-600">Cargando proyectos...</p>
+      ) : proyectos.length === 0 ? (
         <p className="text-gray-600">No hay proyectos registrados.</p>
       ) : (
         <ul className="space-y-4">
-          {proyectos.map((p) => (
+          {proyectos.map((proyecto) => (
             <li
-              key={p.id}
+              key={proyecto._id}
               className="border rounded p-4 bg-white shadow-sm flex justify-between items-center"
             >
               <div>
-                <h2 className="text-lg font-semibold">{p.nombre}</h2>
-                <p className="text-sm text-gray-500">{p.descripcion}</p>
+                <h2 className="text-lg font-semibold">{proyecto.nombre}</h2>
+                <p className="text-sm text-gray-500">{proyecto.descripcion}</p>
               </div>
               <button
-                onClick={() => navigate(`/projects/${p.id}/chat`)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                onClick={() => navigate(`/projects/${proyecto._id}/chat`)}
+                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition"
               >
-                Ir al chat
+                💬 Chat
               </button>
             </li>
           ))}

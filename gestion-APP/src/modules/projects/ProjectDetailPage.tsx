@@ -54,9 +54,10 @@ export const ProjectDetailPage = () => {
   });
 
   const esPropietario = !!usuario && proyecto?.miembros?.some(
-    (m: any) => m.usuario && (m.usuario._id === (usuario as any)._id) && m.rol === 'propietario'
+    (m: any) =>
+      (m.usuario?._id?.toString?.() === usuario._id?.toString?.()) &&
+      m.rol === 'propietario'
   );
-
   const eliminarMutation = useMutation({
     mutationFn: () => eliminarProyecto(token!, id!),
     onSuccess: () => {

@@ -18,7 +18,7 @@ import { Navbar } from '../components/Navbar';
 export const AppRouter = () => {
   return (
     <BrowserRouter>
-      <Navbar />
+      <Navbar/>
       <Routes>
         {/* Públicas */}
         <Route path="/login" element={<LoginPage />} />
@@ -36,7 +36,6 @@ export const AppRouter = () => {
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
         <Route path="/projects/:id/chat" element={<PrivateRoute><ProjectChatPage /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-
         {/* Ruta por defecto */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

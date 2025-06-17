@@ -21,7 +21,7 @@ export const actualizarAvatar = async (req, res) => {
     res.status(200).json({
       msg: 'Avatar actualizado correctamente',
       usuario: {
-        id: actualizado._id,
+        _id: actualizado._id,
         nombre: actualizado.nombre,
         correo: actualizado.correo,
         avatar: actualizado.avatar,
@@ -38,12 +38,19 @@ export const obtenerPerfil = async (req, res) => {
     const usuario = await User.findById(req.user._id).select('-password');
     if (!usuario) return res.status(404).json({ msg: 'Usuario no encontrado' });
 
-    res.json(usuario);
+    res.json({
+      _id: usuario._id,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      correo: usuario.correo,
+      avatar: usuario.avatar,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: 'Error al obtener perfil' });
   }
 };
+
 
 export const actualizarPerfil = async (req, res) => {
   try {
@@ -60,7 +67,7 @@ export const actualizarPerfil = async (req, res) => {
     res.json({
       msg: 'Perfil actualizado correctamente',
       usuario: {
-        id: actualizado._id,
+        _id: actualizado._id,
         nombre: actualizado.nombre,
         apellido: actualizado.apellido,
         correo: actualizado.correo,
@@ -112,7 +119,7 @@ export const buscarUsuarioPorCorreo = async (req, res) => {
     if (!usuario) return res.status(404).json({ msg: 'Usuario no encontrado' });
 
     res.json({
-      id: usuario._id,
+      _id: usuario._id,
       nombre: usuario.nombre,
       apellido: usuario.apellido,
       correo: usuario.correo,

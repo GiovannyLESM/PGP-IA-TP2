@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { loginUsuario } from '../../api/auth';
 import { useMutation } from '@tanstack/react-query';
+
 type LoginCredentials = {
   correo: string;
   password: string;
@@ -23,16 +24,17 @@ export const LoginPage = () => {
     mutationFn: loginUsuario,
     onSuccess: (data) => {
       login(data.token);
-      navigate('/dashboard');
+      // Navegación diferida: se hace en useEffect abajo
     },
   });
 
-  if (loading) return null;
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
-  if (isAuthenticated) {
-    navigate('/dashboard');
-    return null;
-  }
+  if (loading) return null;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
