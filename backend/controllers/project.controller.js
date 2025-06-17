@@ -192,7 +192,7 @@ export const obtenerMiembros = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const proyecto = await Project.findById(id).populate('miembros.usuario', 'nombre correo');
+    const proyecto = await Project.findById(id).populate('miembros.usuario', 'nombre correo avatar');
 
     if (!proyecto) {
       return res.status(404).json({ msg: 'Proyecto no encontrado' });
@@ -211,6 +211,7 @@ export const obtenerMiembros = async (req, res) => {
     console.error(error);
     res.status(500).json({ msg: 'Error al obtener los miembros' });
   }
+  
 };
 
 export const eliminarMiembro = async (req, res) => {

@@ -141,7 +141,7 @@ export const ProjectChatPage = () => {
       handleEnviar();
     }
   };
-
+console.log(miembros);
   return (
     <Layout>
       <div className="flex min-h-screen">
@@ -150,22 +150,24 @@ export const ProjectChatPage = () => {
           {/* Barra lateral de miembros */} 
           <aside className="hidden md:block md:w-64 bg-gray-50 dark:bg-gray-900 border-r dark:border-gray-700 p-4">
             <h2 className="font-bold mb-4 text-lg">Miembros</h2>
-            <ul>
-              {miembros.map((user) => (
-                <li key={user._id} className="flex items-center gap-2 mb-2">
-                  <img
-                    src={user.avatar || '/avatar-default.png'}
-                    alt={user.nombre}
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <span className="truncate">{user.nombre}</span>
-                  <span
-                    className={`ml-auto w-3 h-3 rounded-full ${conectados.includes(user._id) ? 'bg-green-500' : 'bg-gray-400'}`}
-                    title={conectados.includes(user._id) ? 'Conectado' : 'Desconectado'}
-                  ></span>
-                </li>
-              ))}
-            </ul>
+           <ul>
+            {miembros.map((user) => (
+              <li key={user._id} className="flex items-center gap-2 mb-2">
+                <img
+                  src={
+                    user.avatar && user.avatar.trim() !== ''
+                      ? user.avatar
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nombre)}`
+                  }
+                  alt={user.nombre}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-purple-400"
+                />
+                <span className="truncate">{user.nombre}</span>
+                {/* ...otros datos */}
+              </li>
+            ))}
+          </ul>
+
           </aside>
 
           {/* Chat principal */}
@@ -221,10 +223,15 @@ export const ProjectChatPage = () => {
                           >
                             {!esMio && (
                               <img
-                                src={msg.usuario.avatar || '/avatar-default.png'}
+                                src={
+                                  msg.usuario.avatar && msg.usuario.avatar.trim() !== ''
+                                    ? msg.usuario.avatar
+                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.usuario.nombre)}`
+                                }
                                 alt={msg.usuario.nombre}
                                 className="w-8 h-8 rounded-full"
                               />
+
                             )}
                             <div>
                               {!esMio && (
