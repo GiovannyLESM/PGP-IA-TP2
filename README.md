@@ -104,7 +104,7 @@ docker-compose down
     PORT=5000
     MONGO_URI=url_de_tu_base_mongo
     JWT_SECRET=clave_secreta_segura
-    LANGCHAIN_URL=http://tu-ip-actual-de-la-pc
+    LANGCHAIN_URL=http://tu-ip-actual-de-la-pc:5001
   ```
 
 - `langchain-api/.env`:
