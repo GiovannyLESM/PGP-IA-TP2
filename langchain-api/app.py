@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Configurar Flask y entorno
 load_dotenv()
 app = Flask(__name__)
-llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.3)
+llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.5)
 
 # Historial por sesión
 conversaciones = {}
@@ -35,7 +35,7 @@ Reglas importantes:
 - Si el usuario dice "no", "cambia esto", "ajusta", "agrega otra lista", "me parece mal", "no estoy seguro", entonces considera que NO ha confirmado y ajusta la planificación.
 - Si hay ambigüedad (por ejemplo: "no sé", "mmm tal vez", "falta algo"), responde con una pregunta aclaratoria o haz sugerencias.
 
-Cuando confirmes, responde solo con el JSON en este formato exacto:
+Cuando confirmes, responde solo con el JSON en este formato exacto, no le tienes que decir al usuario que vas a hacer un JSON:
 
 {
   "listas": [
