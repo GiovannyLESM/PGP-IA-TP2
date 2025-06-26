@@ -17,7 +17,7 @@ type RegisterResponse = {
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
     nombre: '',
     correo: '',
@@ -39,7 +39,7 @@ export const RegisterPage = () => {
     onSuccess: (data) => {
       setLocalError(null);
       // Mostrar mensaje de éxito y navegar luego de un tiempo
-      alert(data.msg);
+      setSuccessMessage(data.msg)
       setTimeout(() => {
         navigate('/login');
       }, 1500);
@@ -84,23 +84,24 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 text-black dark:bg-gray-900 dark:text-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-900 dark:to-gray-800 text-black dark:text-white transition-colors duration-300">
       <form
         onSubmit={handleSubmit}
-        className="bg-white dark:bg-gray-800 dark:text-white p-8 rounded shadow-md w-full max-w-md"
+        className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md animate-fade-in animate-[var(--animate-fade-in)]"
       >
         <h2 className="text-2xl font-bold mb-4">Registro</h2>
 
         {(localError || mutation.isError) && (
-          <p className="text-red-500 mb-2">
+          <div className="mb-4 p-2 rounded bg-red-100 text-red-700 border border-red-300 text-sm">
             {localError || mutation.error?.message}
-          </p>
+          </div>
         )}
 
-        {mutation.isSuccess && (
-          <p className="text-green-500 mb-2">{mutation.data?.msg}</p>
+        {successMessage && (
+          <div className="mb-4 p-2 rounded bg-green-100 text-green-700 border border-green-300 text-sm animate-pulse">
+            {successMessage}
+          </div>
         )}
-
         <input
           type="text"
           name="nombre"

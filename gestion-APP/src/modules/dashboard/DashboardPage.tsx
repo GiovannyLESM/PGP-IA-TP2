@@ -35,7 +35,13 @@ export const DashboardPage = () => {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
-          <div className="text-lg text-gray-600 dark:text-gray-300 animate-pulse">Cargando proyectos...</div>
+          <div className="flex justify-center items-center min-h-[120px]">
+            <svg className="animate-spin h-8 w-8 text-purple-500 mr-2" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            <span className="text-lg text-gray-600 dark:text-gray-300">Cargando proyectos...</span>
+          </div>
         </div>
       </Layout>
     );

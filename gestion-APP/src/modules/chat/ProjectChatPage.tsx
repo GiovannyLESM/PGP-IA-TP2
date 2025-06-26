@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../../components/Layout';
 import { Sidebar } from '../../components/Sidebar';
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 import { API_BASE_URL } from '../../api/config';
 
 interface Usuario {
@@ -33,7 +33,7 @@ export const ProjectChatPage = () => {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  //Estados para "escribiendo" ---
+  // Estados para "escribiendo"
   const [usuariosEscribiendo, setUsuariosEscribiendo] = useState<string[]>([]);
   const escribiendoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [escribiendo, setEscribiendo] = useState(false);
@@ -63,7 +63,7 @@ export const ProjectChatPage = () => {
     if (proyectoId && token) fetchMensajes();
   }, [proyectoId, token]);
 
-  // Conexión y eventos de socket (solo una vez)
+  // Conexión y eventos de socket
   useEffect(() => {
     if (!proyectoId || !usuario) return;
     const socket = io(SOCKET_URL, { transports: ['websocket'] });
@@ -79,7 +79,6 @@ export const ProjectChatPage = () => {
       setConectados(listaIds);
     });
 
-    // --- NUEVO: Escuchar eventos de "escribiendo" ---
     socket.on('usuario:escribiendo', ({ userId }) => {
       setUsuariosEscribiendo(prev => {
         if (!prev.includes(userId) && userId !== usuario!._id) return [...prev, userId];
@@ -100,7 +99,7 @@ export const ProjectChatPage = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes]);
 
-  // --- NUEVO: Emitir eventos de "escribiendo" ---
+  // Emitir eventos de "escribiendo"
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNuevoMensaje(e.target.value);
 
@@ -141,33 +140,38 @@ export const ProjectChatPage = () => {
       handleEnviar();
     }
   };
-console.log(miembros);
+
+  // --- Render ---
   return (
     <Layout>
       <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex flex-col md:flex-row max-w-6xl mx-auto min-h-[80vh]">
-          {/* Barra lateral de miembros */} 
+          {/* Barra lateral de miembros */}
           <aside className="hidden md:block md:w-64 bg-gray-50 dark:bg-gray-900 border-r dark:border-gray-700 p-4">
             <h2 className="font-bold mb-4 text-lg">Miembros</h2>
-           <ul>
-            {miembros.map((user) => (
-              <li key={user._id} className="flex items-center gap-2 mb-2">
-                <img
-                  src={
-                    user.avatar && user.avatar.trim() !== ''
-                      ? user.avatar
-                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nombre)}`
-                  }
-                  alt={user.nombre}
-                  className="w-8 h-8 rounded-full object-cover border-2 border-purple-400"
-                />
-                <span className="truncate">{user.nombre}</span>
-                {/* ...otros datos */}
-              </li>
-            ))}
-          </ul>
-
+            <ul>
+              {miembros.map((user) => (
+                <li key={user._id} className="flex items-center gap-2 mb-2">
+                  <img
+                    src={
+                      user.avatar && user.avatar.trim() !== ''
+                        ? user.avatar
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nombre)}`
+                    }
+                    alt={user.nombre}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-purple-400"
+                  />
+                  <span className="truncate">{user.nombre}</span>
+                  <span
+                    className={`ml-auto w-3 h-3 rounded-full ${
+                      conectados.includes(user._id) ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                    title={conectados.includes(user._id) ? 'Conectado' : 'Desconectado'}
+                  ></span>
+                </li>
+              ))}
+            </ul>
           </aside>
 
           {/* Chat principal */}
@@ -231,7 +235,6 @@ console.log(miembros);
                                 alt={msg.usuario.nombre}
                                 className="w-8 h-8 rounded-full"
                               />
-
                             )}
                             <div>
                               {!esMio && (
@@ -244,7 +247,11 @@ console.log(miembros);
                             </div>
                             {esMio && (
                               <img
-                                src={msg.usuario.avatar || '/avatar-default.png'}
+                                src={
+                                  msg.usuario.avatar && msg.usuario.avatar.trim() !== ''
+                                    ? msg.usuario.avatar
+                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.usuario.nombre)}`
+                                }
                                 alt={msg.usuario.nombre}
                                 className="w-8 h-8 rounded-full"
                               />
@@ -296,6 +303,5 @@ console.log(miembros);
         </div>
       </div>
     </Layout>
-);
-
+  );
 };

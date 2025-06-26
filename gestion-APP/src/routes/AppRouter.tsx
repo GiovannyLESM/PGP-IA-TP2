@@ -16,9 +16,15 @@ import { PrivateRoute } from '../components/PrivateRoute';
 import { Navbar } from '../components/Navbar';
 
 export const AppRouter = () => {
+  // Puedes implementar la lógica real aquí, por ejemplo abrir un sidebar
+  const handleOpenMenu = () => {
+    // Lógica para abrir menú lateral, modal, etc.
+    console.log('Abrir menú lateral');
+  };
+
   return (
     <BrowserRouter>
-      <Navbar/>
+      <Navbar onOpenMenu={handleOpenMenu} />
       <Routes>
         {/* Públicas */}
         <Route path="/login" element={<LoginPage />} />

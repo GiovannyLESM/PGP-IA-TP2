@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import PlanificadorIA from "../../components/PlanificadorIA";
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useEditarCard, useEliminarCard } from '../../hooks/useCardMutations';
 import { useEditarLista, useEliminarLista } from '../../hooks/useListMutations';
@@ -79,15 +80,17 @@ export const KanbanBoard = () => {
   const [editandoCard, setEditandoCard] = useState(false);
   const [nuevoTitulo, setNuevoTitulo] = useState('');
   const [nuevaDescripcion, setNuevaDescripcion] = useState('');
+  const [listaAEliminar, setListaAEliminar] = useState<string | null>(null);
   
-
+  const [mostrarIA, setMostrarIA] = useState(false);
   const obtenerProgresoChecklist = (checklist?: ChecklistItem[]) => {
-  if (!checklist || checklist.length === 0) return null;
+    if (!checklist || checklist.length === 0) return null;
 
-  const completados = checklist.filter((item) => item.completado).length;
-  const total = checklist.length;
-  return `${completados}/${total}`;
-};
+    const completados = checklist.filter((item) => item.completado).length;
+    const total = checklist.length;
+    return `${completados}/${total}`;
+  };
+  
 
 
 
@@ -333,27 +336,16 @@ const guardarNombreChecklist = async (index: number) => {
     alert('Error al actualizar nombre del ítem');
   }
 };
-const handleGuardarCambios = () => {
-  if (!token) {
-      // Puedes redirigir al login o mostrar un error
-      return <div>No autenticado</div>;
-    }
-  editarCardMutate(
-    {
-      token,
-      cardId: tareaSeleccionada!.id,
-      titulo: nuevoTitulo,
-      descripcion: nuevaDescripcion,
-    },
-    {
-      onSuccess: async () => {
-        // Refresca la card desde la API
-        const cardActualizada = await obtenerCardPorId(token, tareaSeleccionada!.listaId, tareaSeleccionada!.id);
-        setTareaSeleccionada(cardActualizada);
-      },
-    }
-  );
+
+const handlePlanificacionCompletada = () => {
+  // Refresca las listas y las cards del proyecto
+  queryClient.invalidateQueries({ queryKey: ['listas', id] });
+  // Refresca todas las cards de todas las listas
+  listas.forEach((lista: Lista) => {
+    queryClient.invalidateQueries({ queryKey: ['cards', lista._id] });
+  });
 };
+
 return (
   <Layout>
     <div className="flex min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
@@ -369,7 +361,7 @@ return (
 
         <h1 className="text-3xl font-bold mb-6">🗂️ Tablero Kanban</h1>
         {error && <p className="text-red-500 dark:text-red-400">{error}</p>}
-
+        {/* Chat IA arriba del tablero */}
         <DragDropContext onDragEnd={handleDragEnd}>
           {/* SCROLL HORIZONTAL: flex-1 y overflow-x-auto en main, w-max aquí */}
           <div className="w-full overflow-x-auto pb-4">
@@ -421,18 +413,43 @@ return (
                             title="Editar lista"
                           >✏️</button>
                           <button
-                            onClick={() => {
-                              if (window.confirm('¿Eliminar esta lista y todas sus tarjetas?')) {
-                                if (!token) {
-                                  // Puedes redirigir al login o mostrar un error
-                                  return <div>No autenticado</div>;
-                                }
-                                eliminarListaMutate({ token, listaId: lista._id });
-                              }
-                            }}
-                            className="text-red-500 hover:text-red-700"
+                            onClick={() => setListaAEliminar(lista._id)}
+                            className="ml-2 text-red-500 hover:text-red-700"
                             title="Eliminar lista"
-                          >🗑️</button>
+                          >
+                            🗑️
+                          </button>
+                          {listaAEliminar === lista._id && (
+                            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+                              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-sm">
+                                <h3 className="text-lg font-semibold mb-4 text-center">
+                                  ¿Estás seguro?
+                                </h3>
+                                <p className="text-sm mb-6 text-center">
+                                  Esto eliminará la lista y todas sus tarjetas asociadas. Esta acción no se puede deshacer.
+                                </p>
+
+                                <div className="flex justify-center gap-4">
+                                  <button
+                                    onClick={() => setListaAEliminar(null)}
+                                    className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-black dark:text-white text-sm"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (!token || !listaAEliminar) return;
+                                      eliminarListaMutate({ token, listaId: listaAEliminar });
+                                      setListaAEliminar(null);
+                                    }}
+                                    className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
                     </h2>
@@ -606,7 +623,26 @@ return (
             </button>
           </form>
         </div>
+         {/* Botón para abrir/cerrar IA */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setMostrarIA(!mostrarIA)}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-6 rounded-full shadow transition"
+            >
+              {mostrarIA ? "🔽 Cerrar asistente IA" : "🤖 ¿Necesitas ayuda para planificar? Usa IA"}
+            </button>
+          </div>
 
+          {/* Chat IA visible solo si mostrarIA es true */}
+          {mostrarIA && (
+            <div className="mt-6">
+              <PlanificadorIA
+                proyectoId={id!}
+                token={token ?? undefined}
+                onPlanificacionCompletada={handlePlanificacionCompletada}
+              />
+            </div>
+          )}    
         {/* Modal de detalle de tarea */}
         {tareaSeleccionada && (
           <div data-testid="modal-tarea" className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
