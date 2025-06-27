@@ -73,6 +73,14 @@ export const generarPlan = async (req, res) => {
             titulo: tarea.titulo,
             descripcion: tarea.descripcion,
             listaId: listaGuardada._id,
+            etiquetas: Array.isArray(tarea.etiquetas) ? tarea.etiquetas.map(e => ({
+              nombre: e.nombre || '',
+              color: e.color || '#000000'
+            })) : [],
+            checklist: Array.isArray(tarea.checklist) ? tarea.checklist.map(c => ({
+              nombre: c.nombre || '',
+              completado: !!c.completado
+            })) : [],
           });
           await nuevaCard.save();
         }

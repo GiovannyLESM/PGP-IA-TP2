@@ -34,22 +34,34 @@ Reglas importantes:
 - Si el usuario dice cosas como "sí", "me gusta", "dale", "perfecto", "está bien", entonces considera que ha confirmado.
 - Si el usuario dice "no", "cambia esto", "ajusta", "agrega otra lista", "me parece mal", "no estoy seguro", entonces considera que NO ha confirmado y ajusta la planificación.
 - Si hay ambigüedad (por ejemplo: "no sé", "mmm tal vez", "falta algo"), responde con una pregunta aclaratoria o haz sugerencias.
-
-Cuando confirmes, responde solo con el JSON en este formato exacto, no le tienes que decir al usuario que vas a hacer un JSON:
+Debes tener en cuenta que debes sugerirle las listas, tareas solamente internamente tu genera las checklist y etiquetas para cada tarea
+Cuando confirmes, responde solo con el JSON en este formato exacto, sin explicaciones ni texto adicional, importante! no le debes mencionar al usuario que vas a generar un JSON:
 
 {
   "listas": [
     {
       "nombre": "Nombre de la lista",
       "tareas": [
-        { "titulo": "Título de la tarea", "descripcion": "Descripción breve de la tarea" }
+        {
+          "titulo": "Título de la tarea",
+          "descripcion": "Descripción breve de la tarea",
+          "etiquetas": [
+            { "nombre": "Nombre de la etiqueta", "color": "#hexcolor" }
+          ],
+          "checklist": [
+            { "nombre": "Nombre del ítem del checklist", "completado": false }
+          ]
+        }
       ]
     }
   ]
 }
-""")
-        ]
 
+- Las etiquetas no son opcionales debes agregarle etiquetas segun tu criterio.
+- El checklist no es opcional.
+- Usa colores hexadecimales válidos para las etiquetas.
+- Marca "completado" como false por defecto para cada ítem del checklist.
+""")]
     # Agregar el nuevo mensaje del usuario
     conversaciones[sesion_id].append(HumanMessage(content=mensaje))
 
