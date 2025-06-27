@@ -4,7 +4,7 @@ import { List } from '../models/List.js';
 import { Card } from '../models/Card.js';
 import { Project } from '../models/Project.js';
 
-const LANGCHAIN_URL = process.env.LANGCHAIN_URL || 'http://192.168.18.11:5001';
+const LANGCHAIN_URL = process.env.LANGCHAIN_URL || 'http://192.168:5001';
 
 // Función auxiliar para reintentos con backoff exponencial
 async function llamarLangChainConReintentos(data, intentos = 3, delay = 2000) {
