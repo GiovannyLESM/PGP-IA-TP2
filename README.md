@@ -72,7 +72,7 @@ docker-compose up --build
 
 ```bash
 cd langchain-api
-npm install
+pip install -r requirements.txt
 docker-compose up --build
 ```
 
