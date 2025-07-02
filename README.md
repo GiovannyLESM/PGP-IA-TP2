@@ -4,6 +4,13 @@ Proyecto del curso **Taller de Proyectos 2** – Universidad Continental
 Aplicación web MERN con integración de **Inteligencia Artificial** y contenedores Docker.
 
 ---
+## INTEGRANTES:
+FERRUZO IZQUIERDO JOCABED ISABEL
+CORILLA JUSCAMAITA SAID MARDUX
+ORTEGA BATALLA BRAULIO CESAR
+MUNIVE GUERRA JOSE ALEJANDRO
+SEGURA MEZA GIOVANNY LUIS EDUARDO
+SINCHE ALVARADO YERALD CRISTHIAN
 
 ## 🌐 Tecnologías
 
