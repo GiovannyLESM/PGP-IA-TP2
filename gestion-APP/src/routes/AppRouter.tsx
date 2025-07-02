@@ -8,7 +8,6 @@ import { ProjectFormPage } from '../modules/projects/ProjectFormPage';
 import { TaskListPage } from '../modules/tasks/TaskListPage';
 import { TaskFormPage } from '../modules/tasks/TaskFormPage';
 import { KanbanBoard } from '../modules/kanban/KanbanBoard';
-import { EditTaskPage } from '../modules/kanban/EditTaskPage';
 import { ChatPage } from '../modules/chat/ChatPage';
 import { ProjectChatPage } from '../modules/chat/ProjectChatPage';
 import { ProfilePage } from '../modules/profile/ProfilePage';
@@ -38,7 +37,6 @@ export const AppRouter = () => {
         <Route path="/projects/:id/tasks" element={<PrivateRoute><TaskListPage /></PrivateRoute>} />
         <Route path="/projects/:id/tasks/new" element={<PrivateRoute><TaskFormPage /></PrivateRoute>} />
         <Route path="/projects/:id/kanban" element={<PrivateRoute><KanbanBoard /></PrivateRoute>} />
-        <Route path="/projects/:id/kanban/edit/:taskId" element={<PrivateRoute><EditTaskPage /></PrivateRoute>} />
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
         <Route path="/projects/:id/chat" element={<PrivateRoute><ProjectChatPage /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
