@@ -6,8 +6,6 @@ import { useEditarCard, useEliminarCard } from '../../hooks/useCardMutations';
 import { useEditarLista, useEliminarLista } from '../../hooks/useListMutations';
 import {
   DragDropContext,
-  Droppable,
-  Draggable,
   DropResult,
 } from '@hello-pangea/dnd';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +25,10 @@ import {
 import { Layout } from '../../components/Layout';
 import { Sidebar } from '../../components/Sidebar';
 import { API_BASE_URL } from '../../api/config';
+import { ModalDetalleTarea } from "./components/ModalDetalleTarea";
+import { ListaKanban } from './components/ListaKanban';
+import { FormularioNuevaLista } from './components/FormularioNuevaLista';
+import { BotonPlanificadorIA } from './components/BotonPlanificadorIA';
 interface ChecklistItem {
   nombre: string;
   completado: boolean;
@@ -91,9 +93,6 @@ export const KanbanBoard = () => {
     return `${completados}/${total}`;
   };
   
-
-
-
 const cargarEtiquetas = async (cardId: string) => {
   try {
     const data = await obtenerEtiquetas(token!, cardId);
@@ -366,272 +365,90 @@ return (
           {/* SCROLL HORIZONTAL: flex-1 y overflow-x-auto en main, w-max aquí */}
           <div className="w-full overflow-x-auto pb-4">
             <div className="flex gap-4 w-max min-h-[350px]">
-              {listas.map((lista: Lista) => (
-                <Droppable droppableId={lista._id} key={lista._id}>
-                  {(provided) => (
-                    <div
-                      data-testid="lista-kanban"
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="bg-gray-100 dark:bg-gray-800 p-4 rounded min-w-[320px] max-w-xs transition-colors flex-shrink-0 shadow-lg"
-                    >
-                      <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-                      {editandoListaId === lista._id ? (
-                        <input
-                          value={nuevoNombreLista}
-                          onChange={e => setNuevoNombreLista(e.target.value)}
-                          onBlur={() => {
-                            if (!token) {
-                              // Puedes redirigir al login o mostrar un error
-                              return <div>No autenticado</div>;
-                            }
-                            editarListaMutate({ token, listaId: lista._id, nombre: nuevoNombreLista });
-                            setEditandoListaId(null);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              if (!token) {
-                                // Puedes redirigir al login o mostrar un error
-                                return <div>No autenticado</div>;
-                              }
-                              editarListaMutate({ token, listaId: lista._id, nombre: nuevoNombreLista });
-                              setEditandoListaId(null);
-                            }
-                          }}
-                          autoFocus
-                          className="border rounded px-2 py-1 text-sm"
-                        />
-                      ) : (
-                        <>
-                          {lista.nombre}
-                          <button
-                            onClick={() => {
-                              setEditandoListaId(lista._id);
-                              setNuevoNombreLista(lista.nombre);
-                            }}
-                            className="ml-2 text-blue-500 hover:text-blue-700"
-                            title="Editar lista"
-                          >✏️</button>
-                          <button
-                            onClick={() => setListaAEliminar(lista._id)}
-                            className="ml-2 text-red-500 hover:text-red-700"
-                            title="Eliminar lista"
-                          >
-                            🗑️
-                          </button>
-                          {listaAEliminar === lista._id && (
-                            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-                              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-sm">
-                                <h3 className="text-lg font-semibold mb-4 text-center">
-                                  ¿Estás seguro?
-                                </h3>
-                                <p className="text-sm mb-6 text-center">
-                                  Esto eliminará la lista y todas sus tarjetas asociadas. Esta acción no se puede deshacer.
-                                </p>
+              {listas.map((lista:Lista) => {
+                const tareasDeLista = tareas.filter((t) => t.listaId === lista._id);
+                const mostrandoFormulario = !!mostrarFormulario[lista._id];
+                const tareaData = nuevaTarea[lista._id] || { titulo: '', descripcion: '' };
 
-                                <div className="flex justify-center gap-4">
-                                  <button
-                                    onClick={() => setListaAEliminar(null)}
-                                    className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-black dark:text-white text-sm"
-                                  >
-                                    Cancelar
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (!token || !listaAEliminar) return;
-                                      eliminarListaMutate({ token, listaId: listaAEliminar });
-                                      setListaAEliminar(null);
-                                    }}
-                                    className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm"
-                                  >
-                                    Eliminar
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </h2>
-                      {tareas
-                        .filter((t) => t.listaId === lista._id)
-                        .map((tarea, index) => (
-                          <Draggable key={tarea.id} draggableId={tarea.id} index={index}>
-                            {(provided) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`border rounded p-3 mb-2 shadow bg-white dark:bg-gray-700 dark:text-white transition-colors cursor-pointer hover:shadow-2xl ${
-                                  tarea.completada
-                                    ? 'bg-green-50 dark:bg-green-900 line-through text-green-700 dark:text-green-300'
-                                    : ''
-                                }`}
-                              >
-                                {tarea.etiquetas && tarea.etiquetas.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mb-2">
-                                    {tarea.etiquetas.map((etiqueta, idx) => (
-                                      <span
-                                        key={idx}
-                                        data-testid="etiqueta-creada"
-                                        className="px-2 py-0.5 text-xs rounded font-medium text-white"
-                                        style={{ backgroundColor: etiqueta.color }}
-                                      >
-                                        {etiqueta.nombre}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={tarea.completada || false}
-                                    onChange={(e) => toggleCompletada(tarea.id, e.target.checked)}
-                                  />
-                                  <div>
-                                    <h3
-                                      className="font-bold cursor-pointer hover:underline"
-                                      onClick={() => abrirDetalleTarea(tarea)}
-                                    >
-                                      {tarea.titulo}
-                                    </h3>
-                                    {tarea.checklist && tarea.checklist.length > 0 && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                                        ✅ {obtenerProgresoChecklist(tarea.checklist)}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+                return (
+                  <ListaKanban
+                    key={lista._id}
+                    lista={lista}
+                    tareas={tareasDeLista}
+                    editandoListaId={editandoListaId}
+                    nuevoNombreLista={nuevoNombreLista}
+                    mostrarFormulario={mostrandoFormulario}
+                    nuevaTarea={tareaData}
+                    onEditarNombre={setNuevoNombreLista}
+                    onGuardarNombre={() => {
+                      if (!token) return;
+                      editarListaMutate({ token, listaId: lista._id, nombre: nuevoNombreLista });
+                      setEditandoListaId(null);
+                    }}
+                    onIniciarEdicion={() => {
+                      setEditandoListaId(lista._id);
+                      setNuevoNombreLista(lista.nombre);
+                    }}
+                    onEliminarLista={() => setListaAEliminar(lista._id)}
+                    onToggleCompletada={toggleCompletada}
+                    onAbrirTarea={abrirDetalleTarea}
+                    onMostrarFormulario={() =>
+                      setMostrarFormulario((prev) => ({ ...prev, [lista._id]: true }))
+                    }
+                    onOcultarFormulario={() =>
+                      setMostrarFormulario((prev) => ({ ...prev, [lista._id]: false }))
+                    }
+                    onActualizarNuevaTarea={(field, valor) =>
+                      setNuevaTarea((prev) => ({
+                        ...prev,
+                        [lista._id]: { ...prev[lista._id], [field]: valor },
+                      }))
+                    }
+                    onCrearTarea={(e) => handleCrearCard(e, lista._id)}
+                    listaAEliminar={listaAEliminar === lista._id}
+                    onConfirmarEliminar={() => {
+                      if (!token || !listaAEliminar) return;
+                      eliminarListaMutate({ token, listaId: listaAEliminar });
+                      setListaAEliminar(null);
+                    }}
+                    onCancelarEliminar={() => setListaAEliminar(null)}
+                    obtenerProgresoChecklist={obtenerProgresoChecklist}
+                  />
+                );
+              })}
 
-                      {provided.placeholder}
-
-                      {!mostrarFormulario[lista._id] ? (
-                        <button
-                          onClick={() =>
-                            setMostrarFormulario((prev) => ({ ...prev, [lista._id]: true }))
-                          }
-                          className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          ➕ Añadir tarea
-                        </button>
-                      ) : (
-                        <form
-                          onSubmit={(e) => handleCrearCard(e, lista._id)}
-                          className="mt-3 space-y-2"
-                        >
-                          <input
-                            type="text"
-                            name='tarea'
-                            placeholder="Título de la tarea"
-                            value={nuevaTarea[lista._id]?.titulo || ''}
-                            onChange={(e) =>
-                              setNuevaTarea((prev) => ({
-                                ...prev,
-                                [lista._id]: {
-                                  ...prev[lista._id],
-                                  titulo: e.target.value,
-                                },
-                              }))
-                            }
-                            className="w-full p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                          <input
-                            type="text"
-                            name='descripcion'
-                            placeholder="Descripción"
-                            value={nuevaTarea[lista._id]?.descripcion || ''}
-                            onChange={(e) =>
-                              setNuevaTarea((prev) => ({
-                                ...prev,
-                                [lista._id]: {
-                                  ...prev[lista._id],
-                                  descripcion: e.target.value,
-                                },
-                              }))
-                            }
-                            className="w-full p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                          <div className="flex justify-between gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setMostrarFormulario((prev) => ({
-                                  ...prev,
-                                  [lista._id]: false,
-                                }))
-                              }
-                              className="w-full px-2 py-1 text-sm border rounded hover:bg-gray-100 dark:hover:bg-gray-600"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              type="submit"
-                              className="w-full bg-green-500 text-white px-2 py-1 text-sm rounded hover:bg-green-600"
-                            >
-                              Guardar
-                            </button>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              ))}
             </div>
           </div>
         </DragDropContext>
 
         {/* Formulario para nueva lista */}
-        <div className="mt-8 max-w-md mx-auto bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h2 className="text-lg font-semibold mb-3 text-center">➕ Añadir nueva lista</h2>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!nuevaLista.trim()) return;
+        <FormularioNuevaLista
+          nuevaLista={nuevaLista}
+          onCambiarNombre={setNuevaLista}
+          onCrearLista={async (e) => {
+            e.preventDefault();
+            if (!nuevaLista.trim()) return;
 
-              try {
-                const response = await crearLista(token!, id!, nuevaLista);
-                const nueva = response.lista;
-                setNuevaLista('');
-                queryClient.invalidateQueries({ queryKey: ['listas', id] });
+            try {
+              const response = await crearLista(token!, id!, nuevaLista);
+              const nueva = response.lista;
+              setNuevaLista('');
+              queryClient.invalidateQueries({ queryKey: ['listas', id] });
 
-                if (nueva && nueva._id) {
-                  queryClient.invalidateQueries({ queryKey: ['cards', nueva._id] });
-                }
-              } catch (err: any) {
-                alert(err.message || 'Error al crear la lista');
+              if (nueva && nueva._id) {
+                queryClient.invalidateQueries({ queryKey: ['cards', nueva._id] });
               }
-            }}
-            className="flex gap-2"
-          >
-            <input
-              type="text"
-              placeholder="Nombre de la lista"
-              value={nuevaLista}
-              onChange={(e) => setNuevaLista(e.target.value)}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            <button
-              type="submit"
-              className="bg-indigo-600 text-white px-4 rounded hover:bg-indigo-700"
-            >
-              Crear
-            </button>
-          </form>
-        </div>
+            } catch (err: any) {
+              alert(err.message || 'Error al crear la lista');
+            }
+          }}
+        />
+
          {/* Botón para abrir/cerrar IA */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setMostrarIA(!mostrarIA)}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-6 rounded-full shadow transition"
-            >
-              {mostrarIA ? "🔽 Cerrar asistente IA" : "🤖 ¿Necesitas ayuda para planificar? Usa IA"}
-            </button>
-          </div>
+         <BotonPlanificadorIA
+            mostrarIA={mostrarIA}
+            onToggle={() => setMostrarIA(!mostrarIA)}
+          />
 
           {/* Chat IA visible solo si mostrarIA es true */}
           {mostrarIA && (
@@ -645,273 +462,84 @@ return (
           )}    
         {/* Modal de detalle de tarea */}
         {tareaSeleccionada && (
-          <div data-testid="modal-tarea" className="fixed inset-0 bg-black/10 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="bg-white dark:bg-gray-800 dark:text-white p-6 rounded shadow max-w-md w-full transition-colors duration-300
-  max-h-[90vh] overflow-y-auto relative">
-              <h2 className="text-2xl font-bold mb-4">📋 Detalles de la Tarjeta</h2>
-              {editandoCard ? (
-                <>
-                  <input
-                    value={nuevoTitulo} 
-                    onChange={e => setNuevoTitulo(e.target.value)}
-                    className="mb-2 border rounded px-2 py-1 w-full"
-                  />
-                  <textarea
-                    value={nuevaDescripcion}
-                    onChange={e => setNuevaDescripcion(e.target.value)}
-                    className="mb-2 border rounded px-2 py-1 w-full"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        if (!token) {
-                          alert('No autenticado');
-                          return;
-                        }
-                        editarCardMutate(
-                          {
-                            token,
-                            cardId: tareaSeleccionada!.id,
-                            titulo: nuevoTitulo,
-                            descripcion: nuevaDescripcion,
-                          },
-                          {
-                            onSuccess: async () => {
-                              const cardActualizada = await obtenerCardPorId(token, tareaSeleccionada!.listaId, tareaSeleccionada!.id);
-                              setTareaSeleccionada(cardActualizada);
-                              setEditandoCard(false);
-                            },
-                          }
-                        );
-                      }}
-                      className="bg-green-600 text-white px-4 py-2 rounded"
-                    >
-                      Guardar
-                    </button>
-                    <button
-                      onClick={() => setEditandoCard(false)}
-                      className="bg-gray-300 text-black px-4 py-2 rounded"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold mb-1">Título:</p>
-                  <p className="mb-2">{tareaSeleccionada.titulo}</p>
-                  <p className="font-semibold mb-1">Descripción:</p>
-                  <p className="mb-2">{tareaSeleccionada.descripcion}</p>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => {
-                        setEditandoCard(true);
-                        setNuevoTitulo(tareaSeleccionada.titulo);
-                        setNuevaDescripcion(tareaSeleccionada.descripcion);
-                      }}
-                      className="text-blue-500 hover:text-blue-700"
-                    >
-                      ✏️ Editar
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm('¿Eliminar esta tarjeta?')) {
-                          if (!token) {
-                            alert('No autenticado');
-                            return;
-                          }
-                          eliminarCardMutate({ token, cardId: tareaSeleccionada!.id });
-                          setTareaSeleccionada(null); // Cierra el modal
-                        }
-                      }}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </div>
-                </>
-              )}
-              {/* Etiquetas */}
-              {etiquetas.length > 0 && (
-                <div className="mb-4">
-                  <p className="font-semibold mb-1">Etiquetas:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {etiquetas.map((etiqueta, idx) => (
-                      <div key={idx} className="flex items-center gap-1">
-                        <span
-                          className="px-2 py-1 text-xs rounded font-medium text-white"
-                          style={{ backgroundColor: etiqueta.color }}
-                        >
-                          {etiqueta.nombre}
-                        </span>
-                        <button
-                          onClick={() => handleEliminarEtiqueta(idx)}
-                          className="text-xs text-red-500 hover:text-red-700"
-                        >
-                          ❌
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          <ModalDetalleTarea
+            tarea={tareaSeleccionada}
+            etiquetas={etiquetas}
+            checklist={checklist}
+            nuevoChecklist={nuevoChecklist}
+            nuevoNombreChecklist={nuevoNombreChecklist}
+            editandoCard={editandoCard}
+            nuevoTitulo={nuevoTitulo}
+            nuevaDescripcion={nuevaDescripcion}
+            editandoIndex={editandoIndex}
+            nuevaEtiqueta={nuevaEtiqueta}
+            
+            onClose={() => setTareaSeleccionada(null)}
+            onEditar={() => {
+              setEditandoCard(true);
+              setNuevoTitulo(tareaSeleccionada.titulo);
+              setNuevaDescripcion(tareaSeleccionada.descripcion);
+            }}
+            onGuardarEdicion={async () => {
+              if (!token || !tareaSeleccionada) return;
+              editarCardMutate({
+                token,
+                cardId: tareaSeleccionada.id,
+                titulo: nuevoTitulo,
+                descripcion: nuevaDescripcion,
+              }, {
+                onSuccess: async () => {
+                  const actualizada = await obtenerCardPorId(token, tareaSeleccionada.listaId, tareaSeleccionada.id);
+                  setTareaSeleccionada(actualizada);
+                  setEditandoCard(false);
+                }
+              });
+            }}
+            onEliminar={() => {
+              if (!token || !tareaSeleccionada) return;
+              eliminarCardMutate({ token, cardId: tareaSeleccionada.id });
+              setTareaSeleccionada(null);
+            }}
+            onActualizarTitulo={setNuevoTitulo}
+            onActualizarDescripcion={setNuevaDescripcion}
 
-              <div className="mt-4">
-                <h4 className="font-semibold mb-1">🎨 Nueva etiqueta</h4>
-                <div className="flex gap-2 items-center">
-                  <input
-                    data-testid="input-etiqueta"
-                    type="text"
-                    placeholder="Nombre"
-                    value={nuevaEtiqueta.nombre}
-                    onChange={(e) => setNuevaEtiqueta((prev) => ({ ...prev, nombre: e.target.value }))}
-                    className="flex-1 p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                  <input
-                    data-testid="color-etiqueta"
-                    type="color"
-                    value={nuevaEtiqueta.color}
-                    onChange={(e) => setNuevaEtiqueta((prev) => ({ ...prev, color: e.target.value }))}
-                    className="w-10 h-10 border p-0"
-                  />
-                  <button
-                    data-testid="btn-agregar-etiqueta"
-                    onClick={handleAgregarEtiqueta}
-                    className="bg-indigo-600 text-white px-3 rounded hover:bg-indigo-700 text-sm"
-                  >
-                    Añadir
-                  </button>
-                </div>
-              </div>
+            onAgregarEtiqueta={handleAgregarEtiqueta}
+            onEliminarEtiqueta={handleEliminarEtiqueta}
+            onActualizarEtiqueta={(field, value) =>
+              setNuevaEtiqueta((prev) => ({ ...prev, [field]: value }))
+            }
 
-              {/* Checklist */}
-              {checklist.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2">✅ Checklist:</h3>
-                  <ul className="space-y-2">
-                    {checklist.map((item, index) => (
-                      <li key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={item.completado}
-                            onChange={(e) => toggleChecklistItem(index, e.target.checked)}
-                          />
-                          {editandoIndex === index ? (
-                            <input
-                              type="text"
-                              value={nuevoNombreChecklist}
-                              onChange={(e) => setNuevoNombreChecklist(e.target.value)}
-                              onBlur={() => guardarNombreChecklist(index)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') guardarNombreChecklist(index);
-                              }}
-                              autoFocus
-                              className="border p-0.5 text-sm rounded"
-                            />
-                          ) : (
-                            <span
-                              className={`${item.completado ? 'line-through text-green-600' : ''} cursor-pointer`}
-                              onDoubleClick={() => {
-                                setEditandoIndex(index);
-                                setNuevoNombreChecklist(item.nombre);
-                              }}
-                            >
-                              {item.nombre}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => eliminarItemChecklist(index)}
-                          className="text-red-500 hover:text-red-700 text-sm"
-                        >
-                          ❌
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            onToggleChecklist={toggleChecklistItem}
+            onAgregarChecklist={handleAgregarChecklist}
+            onEliminarChecklist={eliminarItemChecklist}
+            onEditarChecklist={(index, nombre) => {
+              setEditandoIndex(index);
+              setNuevoNombreChecklist(nombre);
+            }}
+            onGuardarChecklistNombre={guardarNombreChecklist}
+            onActualizarChecklistNombre={setNuevoChecklist}
 
-              {/* Añadir nuevo ítem al checklist */}
-              <div className="mt-4">
-                <h4 className="font-semibold mb-1">➕ Añadir checklist</h4>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    data-testid="input-checklist"
-                    placeholder="Nombre del ítem"
-                    value={nuevoChecklist}
-                    onChange={(e) => setNuevoChecklist(e.target.value)}
-                    className="flex-1 p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                  <button
-                    data-testid="btn-agregar-checklist"
-                    onClick={handleAgregarChecklist}
-                    className="bg-green-600 text-white px-2 rounded hover:bg-green-700 text-sm"
-                  >
-                    Añadir
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                <label className="block text-sm font-medium">📅 Fecha de inicio:</label>
-                <input
-                  name="fechaInicio"
-                  type="date"
-                  value={tareaSeleccionada.fechaInicio?.slice(0, 10) || ''}
-                  onChange={async (e) => {
-                    const nuevaFechaInicio = e.target.value;
-                    const nuevaFechaFin = tareaSeleccionada.fechaFin || new Date(Date.now() + 86400000).toISOString();
-
-                    await actualizarFechasCard(token!, tareaSeleccionada.id, {
-                      fechaInicio: nuevaFechaInicio,
-                      fechaFin: nuevaFechaFin,
-                    });
-
-                    setTareaSeleccionada((prev) =>
-                      prev ? { ...prev, fechaInicio: nuevaFechaInicio } : prev
-                    );
-
-                    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
-                  }}
-                  className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-
-                <label className="block text-sm font-medium">📅 Fecha de fin:</label>
-                <input
-                  name="fechaFin"
-                  type="date"
-                  value={tareaSeleccionada.fechaFin?.slice(0, 10) || ''}
-                  onChange={async (e) => {
-                    const nuevaFechaFin = e.target.value;
-                    const nuevaFechaInicio = tareaSeleccionada.fechaInicio || new Date().toISOString();
-
-                    await actualizarFechasCard(token!, tareaSeleccionada.id, {
-                      fechaInicio: nuevaFechaInicio,
-                      fechaFin: nuevaFechaFin,
-                    });
-
-                    setTareaSeleccionada((prev) =>
-                      prev ? { ...prev, fechaFin: nuevaFechaFin } : prev
-                    );
-                    queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
-                  }}
-                  className="p-1 border rounded text-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => setTareaSeleccionada(null)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
+            onFechaInicioChange={async (fecha) => {
+              if (!token || !tareaSeleccionada) return;
+              const nuevaFechaFin = tareaSeleccionada.fechaFin || new Date(Date.now() + 86400000).toISOString();
+              await actualizarFechasCard(token, tareaSeleccionada.id, {
+                fechaInicio: fecha,
+                fechaFin: nuevaFechaFin,
+              });
+              setTareaSeleccionada((prev) => prev ? { ...prev, fechaInicio: fecha } : prev);
+              queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
+            }}
+            onFechaFinChange={async (fecha) => {
+              if (!token || !tareaSeleccionada) return;
+              const nuevaFechaInicio = tareaSeleccionada.fechaInicio || new Date().toISOString();
+              await actualizarFechasCard(token, tareaSeleccionada.id, {
+                fechaInicio: nuevaFechaInicio,
+                fechaFin: fecha,
+              });
+              setTareaSeleccionada((prev) => prev ? { ...prev, fechaFin: fecha } : prev);
+              queryClient.invalidateQueries({ queryKey: ['cards', tareaSeleccionada.listaId] });
+            }}
+          />
         )}
       </main>
     </div>
